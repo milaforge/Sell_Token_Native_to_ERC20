@@ -1,6 +1,7 @@
 {
-  "extends": "solhint:default",
+  "extends": "solhint:recommended",
   "rules": {
+    "prettier/prettier": "error",
     "function-max-lines": ["warn", 50],
     "constructor-syntax": "warn",
     "max-line-length": ["error", 120],
@@ -26,5 +27,6 @@
     "reentrancy": "warn",
     "state-visibility": "warn",
     "no-complex-fallback": "off"
-  }
+  },
+  "plugins": ["prettier"]
 }

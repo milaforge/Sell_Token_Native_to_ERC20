@@ -4,7 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "prettier:solidity": "./node_modules/.bin/prettier --write contracts/**/*.sol",
+    "solhint": "solhint -f table contracts/**/*.sol"
+  },
+  "husky": {
+    "hooks": {
+      "pre-push" : "npm run prettier:solidity"
+    }
   },
   "keywords": [],
   "author": "Milad Mehdizade <milad.mehdizade1394@gmail.com>",
@@ -23,6 +30,10 @@
     "ethers": "^5.4.7",
     "hardhat": "^2.6.4",
     "hardhat-preprocessor": "^0.1.4",
+    "husky": "^7.0.2",
+    "prettier": "^2.4.1",
+    "prettier-plugin-solidity": "^1.0.0-beta.18",
+    "solhint-plugin-prettier": "^0.0.5",
     "ts-node": "^10.2.1",
     "typescript": "^4.4.3",
     "web3": "^1.6.0"
