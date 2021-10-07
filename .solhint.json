@@ -1,0 +1,30 @@
+{
+  "extends": "solhint:default",
+  "rules": {
+    "function-max-lines": ["warn", 50],
+    "constructor-syntax": "warn",
+    "max-line-length": ["error", 120],
+    "max-states-count": ["error", 15],
+    "no-empty-blocks": "warn",
+    "no-unused-vars": "warn",
+    "payable-fallback": "warn",
+    "reason-string": ["warn", { "maxLength": 32 }],
+    "code-complexity": ["warn", 7],
+
+    "avoid-call-value": "warn",
+    "avoid-low-level-calls": "warn",
+    "avoid-sha3": "warn",
+    "avoid-suicide": "warn",
+    "avoid-throw": "warn",
+    "avoid-tx-origin": "warn",
+    "check-send-result": "warn",
+    "func-visibility": ["warn", { "ignoreConstructors": true }],
+    "multiple-sends": "warn",
+    "no-inline-assembly": "warn",
+    "not-rely-on-block-hash": "warn",
+    "not-rely-on-time": "warn",
+    "reentrancy": "warn",
+    "state-visibility": "warn",
+    "no-complex-fallback": "off"
+  }
+}
