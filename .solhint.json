@@ -11,6 +11,7 @@
     "payable-fallback": "warn",
     "reason-string": ["warn", { "maxLength": 32 }],
     "code-complexity": ["warn", 7],
+    "compiler-version": ["error", "0.8.4"],
 
     "avoid-call-value": "warn",
     "avoid-low-level-calls": "warn",

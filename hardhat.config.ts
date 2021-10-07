@@ -1,6 +1,7 @@
+import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-ethers";
-import { task } from "hardhat/config";
 import "@openzeppelin/hardhat-upgrades";
+import { task } from "hardhat/config";
 
 // https://hardhat.org/guides/create-task.html
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
@@ -43,13 +44,7 @@ task(
  */
 module.exports = {
   solidity: {
-    compilers: [
-      { version: "0.7.0" },
-      {
-        version: "0.8.4",
-        settings: {},
-      },
-    ],
+    compilers: [{ version: "0.7.0" }, { version: "0.8.4" }],
   },
   defaultNetwork: "localhost",
 };
