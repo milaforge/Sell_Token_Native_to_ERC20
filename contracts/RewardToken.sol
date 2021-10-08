@@ -5,12 +5,12 @@ import "hardhat/console.sol";
 
 // Pausable, PullPayment, AccessControl
 
-contract TKN is ERC20 {
-  constructor(string memory name, string memory symbol)
+contract RewardToken is ERC20 {
+  constructor(string memory name, string memory symbol, uint256 initialSupply)
     public
     ERC20(name, symbol)
   {
-      console.log("Minting ...");
-    _mint(msg.sender, 10000 * 10**decimals());
+    console.log("Minting ...");
+    _mint(msg.sender, initialSupply * 10**18);
   }
 }
