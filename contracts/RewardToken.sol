@@ -6,11 +6,11 @@ import "hardhat/console.sol";
 // Pausable, PullPayment, AccessControl
 
 contract RewardToken is ERC20 {
-  constructor(string memory name, string memory symbol, uint256 initialSupply)
-    public
-    ERC20(name, symbol)
-  {
-    console.log("Minting ...");
+  constructor(
+    string memory name,
+    string memory symbol,
+    uint256 initialSupply
+  ) public ERC20(name, symbol) {
     _mint(msg.sender, initialSupply * 10**18);
   }
 }
