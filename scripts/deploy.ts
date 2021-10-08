@@ -7,9 +7,7 @@ async function main() {
   console.log("Contract deployed to:", token.address);
   console.log(
     "Total supply is:",
-    hre.ethers.utils.formatEther(
-      (await token.totalSupply()).toString()
-    )
+    hre.ethers.utils.formatEther((await token.totalSupply()).toString())
   );
 }
 
