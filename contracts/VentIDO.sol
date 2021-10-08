@@ -11,7 +11,6 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/PullPayment.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-
 import "hardhat/console.sol";
 
 contract VentIDO is Ownable, AccessControl, Pausable {
@@ -57,9 +56,12 @@ contract VentIDO is Ownable, AccessControl, Pausable {
   event RetrieveFundsFromPool(address indexed poolOwner, uint256 amount);
   event LogDepositReceived(address indexed from, bytes data);
 
-  constructor(address poolOwner) {
+  constructor() {
     _setupRole(ADMIN_ROLE, _msgSender());
-    _setupRole(POOL_OWNER_ROLE, poolOwner);
+  }
+
+  function setPoolOwner(address poolOwnerAddress) external onlyOwner {
+    grantRole(POOL_OWNER_ROLE, poolOwnerAddress);
   }
 
   function createPool(PoolInfo memory pool)
@@ -80,7 +82,18 @@ contract VentIDO is Ownable, AccessControl, Pausable {
         status: PoolStatus.Upcoming
       })
     );
+
     return true;
+  }
+
+  function getPoolDetails() external view returns (PoolInfo memory) {
+    return poolInfo[0];
+  }
+
+  function deposit() external payable returns (bool) {
+    //TODO check if pool is still open?
+    //TODO is this user whitelisted?
+    // TODO keep record of user participation
   }
 
   // When no other function matches, not even receive()
