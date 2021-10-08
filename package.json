@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "tsc",
     "test": "npx hardhat test",
     "prettier:solidity": "./node_modules/.bin/prettier --write contracts/**/*.sol",
     "solhint": "solhint -f table contracts/**/*.sol"
