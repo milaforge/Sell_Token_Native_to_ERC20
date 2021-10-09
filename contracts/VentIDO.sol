@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+// import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "@openzeppelin/contracts/security/PullPayment.sol";
@@ -16,7 +16,7 @@ import "./Whitelist.sol";
 import "hardhat/console.sol";
 
 contract VentIDO is Ownable, AccessControl, Pausable, Whitelist {
-  using SafeERC20 for IERC20;
+  // using SafeERC20 for IERC20;
 
   // **** <Roles> ****
   bytes32 private constant POOL_OWNER_ROLE = keccak256("POOL_OWNER_ROLE");
@@ -37,7 +37,7 @@ contract VentIDO is Ownable, AccessControl, Pausable, Whitelist {
     uint256 startDateTime; //TODO how to represent timestamp?
     uint256 endDateTime;
     address walletAddress; // address where Ether is sent
-    IERC20 projectTokenAddress; //the address of the token that project is offering in return
+    address projectTokenAddress; //the address of the token that project is offering in return
     uint16 minAllocationPerUser;
     uint256 maxAllocationPerUser;
     PoolStatus status; //: by default “Upcoming”,
@@ -147,7 +147,7 @@ contract VentIDO is Ownable, AccessControl, Pausable, Whitelist {
     //     softCap: pool.softCap,
     //     startDateTime: pool.startDateTime,
     //     endDateTime: pool.endDateTime,
-    //     walletAddress: pool.walletAddress,
+    //     walletAddress: address(uint160(pool.walletAddress)),
     //     projectTokenAddress: pool.projectTokenAddress,
     //     minAllocationPerUser: pool.minAllocationPerUser,
     //     maxAllocationPerUser: pool.maxAllocationPerUser,
