@@ -1,9 +1,11 @@
 //SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity 0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "./Validations.sol";
 
-contract Whitelist is Ownable {
-  mapping(address => bool) internal whitelist;
+contract Whitelist is Ownable, Validations {
+  mapping(address => bool) internal whitelistedUsers;
+  uint256 internal countOfUsersWhitelisted = 0;
 
   event AddedToWhitelist(address indexed account);
   event RemovedFromWhitelist(address indexed accout);
@@ -13,28 +15,43 @@ contract Whitelist is Ownable {
     _;
   }
 
-  function addToWhitelist(address[] memory _address) internal {
-    require(_address.length > 0, "an array is expected!");
+  function addToWhitelist(address[] memory _addresses)
+    internal
+    onlyOwner
+    returns (bool)
+  {
+    require(_addresses.length > 0, "an array of address is expected!");
 
-    for (uint256 i = 0; i < _address.length; i++) {
-      address userAddress = _address[i];
-
+    for (uint256 i = 0; i < _addresses.length; i++) {
+      address userAddress = _addresses[i];
       require(userAddress != address(0), "zero address is not accepted!");
 
-      whitelist[userAddress] = true;
+      whitelistedUsers[userAddress] = true;
+
+      countOfUsersWhitelisted++;
 
       emit AddedToWhitelist(userAddress);
     }
+
+    return true;
   }
 
-  function removeFromWhitelist(address _address) internal {
-    require(_address != address(0), "No correct address");
-    whitelist[_address] = false;
+  function removeFromWhitelist(address _address)
+    internal
+    nonZeroAddress(_address)
+    onlyOwner
+  {
+    whitelistedUsers[_address] = false;
+    countOfUsersWhitelisted--;
     emit RemovedFromWhitelist(_address);
   }
 
-  function isWhitelisted(address _address) internal view returns (bool) {
-    require(_address != address(0), "No correct address");
-    return whitelist[_address];
+  function isWhitelisted(address _address)
+    internal
+    view
+    nonZeroAddress(_address)
+    returns (bool)
+  {
+    return whitelistedUsers[_address];
   }
 }
