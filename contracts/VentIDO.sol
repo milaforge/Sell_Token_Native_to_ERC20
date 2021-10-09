@@ -119,7 +119,7 @@ contract VentIDO is Ownable, AccessControl, Pausable, Whitelist {
 
   // **** </External> ****
 
-  // **** <External-Admin> ****
+  // **** <External-Owner> ****
   function grantPoolOwnerRole(address _ownerAddress) external onlyOwner {
     grantRole(POOL_OWNER_ROLE, _ownerAddress);
     console.log("new Pool owner", _ownerAddress);
@@ -130,7 +130,7 @@ contract VentIDO is Ownable, AccessControl, Pausable, Whitelist {
     console.log("pool has no owner", _ownerAddress);
   }
 
-  // **** </External-Admin> ****
+  // **** </External-Owner> ****
 
   // **** <External-PoolOwner> ****
   function createPool()
@@ -169,7 +169,7 @@ contract VentIDO is Ownable, AccessControl, Pausable, Whitelist {
 
   // **** <Internal> ****
   function getArrayOfInvestorsAllocation() internal {
-    // returns (InvestorInfo[] storage)
+    // returns (InvestorInfo[] storage s)
     // // I think it is cost effectice to return count of investors and
     // // webapp could use Promise.all(getInvestorInfo(index)); to fetch all invesors info concurrently.
     // InvestorInfo[] storage investors;
