@@ -13,10 +13,18 @@ contract Whitelist is Ownable {
     _;
   }
 
-  function addToWhitelist(address _address) internal {
-    require(_address != address(0), "No correct address");
-    whitelist[_address] = true;
-    emit AddedToWhitelist(_address);
+  function addToWhitelist(address[] memory _address) internal {
+    require(_address.length > 0, "an array is expected!");
+
+    for (uint256 i = 0; i < _address.length; i++) {
+      address userAddress = _address[i];
+
+      require(userAddress != address(0), "zero address is not accepted!");
+
+      whitelist[userAddress] = true;
+
+      emit AddedToWhitelist(userAddress);
+    }
   }
 
   function removeFromWhitelist(address _address) internal {
