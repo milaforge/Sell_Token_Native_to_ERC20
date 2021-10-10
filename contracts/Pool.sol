@@ -16,6 +16,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
   mapping(address => ParticipantDetails) private participantsDetails;
   uint256 private _weiRaised;
 
+  event LogPoolStatusChanged(uint256 currentStatus, uint256 newStatus);
   event Deposit(address indexed investor, uint256 amount);
 
   constructor(PoolModel memory _poolInfo) {
@@ -30,7 +31,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
       projectTokenAddress: _poolInfo.projectTokenAddress,
       minAllocationPerUser: _poolInfo.minAllocationPerUser,
       maxAllocationPerUser: _poolInfo.maxAllocationPerUser,
-      status: IPool.PoolStatus.Ongoing,
+      status: uint256(IPool.PoolStatus.Ongoing),
       totalTokenProvided: _poolInfo.totalTokenProvided,
       exchangeRate: _poolInfo.exchangeRate,
       tokenPrice: _poolInfo.tokenPrice,
@@ -41,6 +42,12 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
   // accidentally sent ETH's are reverted;
   receive() external payable pooIsOngoing(poolInformation) {
     revert("use deposit() method.");
+  }
+
+  function updatePoolStatus(uint256 _newStatus) external override {
+    uint256 currentStatus = poolInformation.status;
+    poolInformation.status = _newStatus;
+    emit LogPoolStatusChanged(currentStatus, _newStatus);
   }
 
   function getPoolDetails()
@@ -76,7 +83,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
   }
 
   function deposit()
-    public
+    external
     payable
     override
     onlyWhitelisted
@@ -110,7 +117,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
   {
     require(_poolInfo.hardCap > 0, "hardCap must be > 0");
     require(_poolInfo.softCap > 0, "softCap must be > 0");
-    require(_poolInfo.softCap > _poolInfo.hardCap, "softCap must be < hardCap");
+    require(_poolInfo.softCap < _poolInfo.hardCap, "softCap must be < hardCap");
 
     //solhint-disable-next-line not-rely-on-time
     require(
@@ -135,17 +142,13 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
       _poolInfo.minAllocationPerUser < _poolInfo.maxAllocationPerUser,
       "minAllocation must be < max!"
     );
+
     require(
-      _poolInfo.status == IPool.PoolStatus.Ongoing,
+      _poolInfo.status == uint256(IPool.PoolStatus.Upcoming),
       "Pool status must be ongoing!"
-    );
-    require(
-      _poolInfo.totalTokenProvided > 0,
-      "totalTokenProvided must be > 0!"
     );
     require(_poolInfo.exchangeRate > 0, "exchangeRate must be > 0!");
     require(_poolInfo.tokenPrice > 0, "token price must be > 0!");
-    require(_poolInfo.totalTokenSold == 0, "total tokens sold must be = 0!");
   }
 
   function _preDepositValidation(uint256 _amount) internal view {
@@ -159,7 +162,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
 
   modifier pooIsOngoing(IPool.PoolModel storage _poolInfo) {
     require(
-      _poolInfo.status == IPool.PoolStatus.Ongoing &&
+      _poolInfo.status == uint256(IPool.PoolStatus.Ongoing) &&
         // solhint-disable-next-line not-rely-on-time
         _poolInfo.startDateTime >= block.timestamp &&
         // solhint-disable-next-line not-rely-on-time
