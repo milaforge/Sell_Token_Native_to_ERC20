@@ -11,7 +11,7 @@ interface IPool {
     address projectTokenAddress; //the address of the token that project is offering in return
     uint16 minAllocationPerUser;
     uint256 maxAllocationPerUser;
-    PoolStatus status; //: by default “Upcoming”,
+    uint status; //: by default “Upcoming”,
     uint256 totalTokenProvided;
     uint256 exchangeRate;
     uint256 tokenPrice;
@@ -37,15 +37,18 @@ interface IPool {
 
   enum PoolStatus {
     Upcoming,
-    Cancelled,
-    Paused,
+    Ongoing,
     Finished,
-    Ongoing
+    Paused,
+    Cancelled
   }
 
   function deposit() external payable returns (bool success);
 
-  function getPoolDetails() external view returns (PoolDetails memory);
+  function getPoolDetails()
+    external
+    view
+    returns (PoolDetails memory poolDetails);
 
-  // function withdraw(uint256 _amount) external;
+  function updatePoolStatus(uint _newStatus) external;
 }
