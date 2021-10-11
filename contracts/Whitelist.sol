@@ -19,7 +19,7 @@ contract Whitelist is Context {
     for (uint256 i = 0; i < _addresses.length; i++) {
       address userAddress = _addresses[i];
 
-      require(isAddressZero(userAddress), "zero address is not accepted!");
+      require(addressNotZero(userAddress), "zero address is not accepted!");
 
       bool whitelisted = _whitelistedUsers[userAddress];
       if (!whitelisted) {
@@ -50,12 +50,12 @@ contract Whitelist is Context {
     isWhiteListed = _whitelistedUsers[_address];
   }
 
-  function isAddressZero(address _address) private pure returns (bool isZero) {
-    isZero = (address(0) == address(_address));
+  function addressNotZero(address _address) private pure returns (bool isZero) {
+    isZero = (address(0) != address(_address));
   }
 
   modifier nonZeroAddress(address _address) {
-    require(isAddressZero(_address), "zero address not accepted!");
+    require(addressNotZero(_address), "zero address not accepted!");
     _;
   }
 
@@ -65,10 +65,7 @@ contract Whitelist is Context {
   }
 
   modifier removeOnlyOnce(address _address) {
-    require(
-      _whitelistedUsers[_address],
-      "removing non existent address from the whitelist!"
-    );
+    require(_whitelistedUsers[_address], "removing non existent address!");
     _;
   }
 }
