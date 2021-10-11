@@ -7,11 +7,14 @@ interface IPool {
     uint256 softCap; // how much of the raise will be accepted as successful IDO
     uint256 startDateTime;
     uint256 endDateTime;
+    PoolStatus status; //: by default “Upcoming”,
+  }
+
+  struct PoolDetailedInfo {
     address walletAddress; // address where Ether is sent
     address projectTokenAddress; //the address of the token that project is offering in return
     uint16 minAllocationPerUser;
     uint256 maxAllocationPerUser;
-    PoolStatus status; //: by default “Upcoming”,
     uint256 totalTokenProvided;
     uint256 exchangeRate;
     uint256 tokenPrice;
@@ -26,12 +29,9 @@ interface IPool {
   // Pool data that needs to be retrieved:
   struct PoolDetails {
     Participations participationDetails;
+    PoolModel poolInfo;
+    PoolDetailedInfo poolDetails;
     uint256 totalRaised;
-    uint256 hardCap;
-    uint256 softCap;
-    uint16 minAllocationPerUser;
-    uint256 maxAllocationPerUser;
-    uint256 startDateTime;
   }
 
   struct Participations {
@@ -48,6 +48,10 @@ interface IPool {
   }
 
   function deposit() external payable returns (bool success);
+
+  function addPoolDetailedInfo(
+PoolDetailedInfo memory _detailedPoolInfo
+  ) external;
 
   function getPoolDetails()
     external

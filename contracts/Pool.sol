@@ -11,7 +11,9 @@ import "./Whitelist.sol";
 import "hardhat/console.sol";
 
 contract Pool is IPool, Whitelist, AccessControl, Ownable {
-  PoolModel private poolInformation;
+  PoolModel private poolInformation; // pool information
+  PoolDetailedInfo private poolDetailedInfo; // ido information (pool details)
+
   address[] private participantsAddress;
   mapping(address => ParticipantDetails) private participantsDetails;
   uint256 private _weiRaised;
@@ -22,25 +24,35 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
 
   constructor(PoolModel memory _poolInfo) {
     _preValidatePoolCreation(_poolInfo);
-
     poolInformation = IPool.PoolModel({
       hardCap: _poolInfo.hardCap,
       softCap: _poolInfo.softCap,
       startDateTime: _poolInfo.startDateTime,
       endDateTime: _poolInfo.endDateTime,
-      walletAddress: _poolInfo.walletAddress,
-      projectTokenAddress: _poolInfo.projectTokenAddress,
-      minAllocationPerUser: _poolInfo.minAllocationPerUser,
-      maxAllocationPerUser: _poolInfo.maxAllocationPerUser,
-      status: IPool.PoolStatus.Upcoming,
-      totalTokenProvided: _poolInfo.totalTokenProvided,
-      exchangeRate: _poolInfo.exchangeRate,
-      tokenPrice: _poolInfo.tokenPrice,
-      totalTokenSold: _poolInfo.totalTokenSold
+      status: _poolInfo.status
     });
 
     emit LogPoolContractAddress(address(this));
     console.log("Pool Created", address(this));
+  }
+
+  function addPoolDetailedInfo(PoolDetailedInfo memory _detailedPoolInfo)
+    external
+    override
+    onlyOwner
+  {
+    _prePoolDetailUpdate(_detailedPoolInfo);
+    poolDetailedInfo.walletAddress = _detailedPoolInfo.walletAddress;
+    poolDetailedInfo.projectTokenAddress = _detailedPoolInfo
+      .projectTokenAddress;
+    poolDetailedInfo.minAllocationPerUser = _detailedPoolInfo
+      .minAllocationPerUser;
+    poolDetailedInfo.maxAllocationPerUser = _detailedPoolInfo
+      .maxAllocationPerUser;
+    poolDetailedInfo.totalTokenProvided = _detailedPoolInfo.totalTokenProvided;
+    poolDetailedInfo.exchangeRate = _detailedPoolInfo.exchangeRate;
+    poolDetailedInfo.tokenPrice = _detailedPoolInfo.tokenPrice;
+    poolDetailedInfo.totalTokenSold = _detailedPoolInfo.totalTokenSold;
   }
 
   // accidentally sent ETH's are reverted;
@@ -62,14 +74,11 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     poolIsCreated(poolInformation)
     returns (PoolDetails memory poolDetails)
   {
-    poolDetails = PoolDetails({
+    poolDetails = IPool.PoolDetails({
       participationDetails: getParticipantsInfo(),
       totalRaised: getTotalRaised(),
-      hardCap: poolInformation.hardCap,
-      softCap: poolInformation.softCap,
-      minAllocationPerUser: poolInformation.minAllocationPerUser,
-      maxAllocationPerUser: poolInformation.maxAllocationPerUser,
-      startDateTime: poolInformation.startDateTime
+      poolInfo: poolInformation,
+      poolDetails: poolDetailedInfo
     });
   }
 
@@ -127,7 +136,6 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     require(_poolInfo.hardCap > 0, "hardCap must be > 0");
     require(_poolInfo.softCap > 0, "softCap must be > 0");
     require(_poolInfo.softCap < _poolInfo.hardCap, "softCap must be < hardCap");
-
     require(
       //solhint-disable-next-line not-rely-on-time
       _poolInfo.startDateTime > block.timestamp,
@@ -138,22 +146,28 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
       _poolInfo.endDateTime > block.timestamp,
       "endDate must be at future time"
     ); //TODO how much in the future?
+  }
+
+  function _prePoolDetailUpdate(PoolDetailedInfo memory _poolDetailedInfo)
+    private
+    pure
+  {
     require(
-      address(_poolInfo.walletAddress) != address(0),
+      address(_poolDetailedInfo.walletAddress) != address(0),
       "walletAddress is a zero address!"
     );
-    require(_poolInfo.minAllocationPerUser > 0, "minAllocation must be > 0!");
     require(
-      _poolInfo.minAllocationPerUser < _poolInfo.maxAllocationPerUser,
+      _poolDetailedInfo.minAllocationPerUser > 0,
+      "minAllocation must be > 0!"
+    );
+    require(
+      _poolDetailedInfo.minAllocationPerUser <
+        _poolDetailedInfo.maxAllocationPerUser,
       "minAllocation must be < max!"
     );
 
-    require(
-      IPool.PoolStatus(_poolInfo.status) == IPool.PoolStatus.Upcoming,
-      "Pool status must be ongoing!"
-    );
-    require(_poolInfo.exchangeRate > 0, "exchangeRate must be > 0!");
-    require(_poolInfo.tokenPrice > 0, "token price must be > 0!");
+    require(_poolDetailedInfo.exchangeRate > 0, "exchangeRate must be > 0!");
+    require(_poolDetailedInfo.tokenPrice > 0, "token price must be > 0!");
   }
 
   modifier poolIsCreated(IPool.PoolModel storage _poolInfo) {

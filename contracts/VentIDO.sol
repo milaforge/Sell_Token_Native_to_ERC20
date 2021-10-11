@@ -54,27 +54,43 @@ contract VentIDO is Pausable, AccessControl, Whitelist, Ownable {
     uint256 _softCap,
     uint256 _startDateTime,
     uint256 _endDateTime,
-    address _walletAddress
+    uint256 _status
   ) external payable onlyRole(POOL_OWNER_ROLE) returns (IPool) {
     IPool.PoolModel memory model = IPool.PoolModel({
       hardCap: _hardCap,
       softCap: _softCap,
       startDateTime: _startDateTime,
       endDateTime: _endDateTime,
-      walletAddress: _walletAddress,
-      projectTokenAddress: _walletAddress, //TODO update this address when adding Token and withdrawal()
-      minAllocationPerUser: 1,
-      maxAllocationPerUser: 1000,
-      status: IPool.PoolStatus.Upcoming,
-      totalTokenProvided: 0,
-      exchangeRate: 1,
-      tokenPrice: 1,
-      totalTokenSold: 0
+      status: IPool.PoolStatus(_status)
     });
 
     pool = new Pool(model);
     emit LogPoolCreated(_msgSender());
     return pool;
+  }
+
+  function addPoolDetailedInfo(
+    address _walletAddress,
+    address _projectTokenAddress,
+    uint16 _minAllocationPerUser,
+    uint256 _maxAllocationPerUser,
+    uint256 _totalTokenProvided,
+    uint256 _exchangeRate,
+    uint256 _tokenPrice,
+    uint256 _totalTokenSold
+  ) external onlyRole(POOL_OWNER_ROLE) {
+    pool.addPoolDetailedInfo(
+      IPool.PoolDetailedInfo({
+        walletAddress: _walletAddress,
+        projectTokenAddress: _projectTokenAddress,
+        minAllocationPerUser: _minAllocationPerUser,
+        maxAllocationPerUser: _maxAllocationPerUser,
+        totalTokenProvided: _totalTokenProvided,
+        exchangeRate: _exchangeRate,
+        tokenPrice: _tokenPrice,
+        totalTokenSold: _totalTokenSold
+      })
+    );
   }
 
   function getPoolDetails()
