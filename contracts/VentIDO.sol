@@ -34,8 +34,10 @@ contract VentIDO is Pausable, AccessControl, Whitelist, Ownable {
     external
     onlyOwner
     nonZeroAddress(_address)
+    returns (bool success)
   {
     grantRole(POOL_OWNER_ROLE, _address);
+    success = true;
   }
 
   // Admin revokes PoolOwner role feom an address;
@@ -62,7 +64,7 @@ contract VentIDO is Pausable, AccessControl, Whitelist, Ownable {
       walletAddress: _walletAddress,
       projectTokenAddress: _walletAddress, //TODO update this address when adding Token and withdrawal()
       minAllocationPerUser: 1,
-      maxAllocationPerUser: 10000,
+      maxAllocationPerUser: 1000,
       status: IPool.PoolStatus.Upcoming,
       totalTokenProvided: 0,
       exchangeRate: 1,

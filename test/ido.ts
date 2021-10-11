@@ -3,7 +3,6 @@ const { ethers, Web3, web3 } = require("hardhat");
 
 let idoContract: any;
 
-
 describe("IDO", async () => {
   let poolOwner: any;
   let raisedWeiReceiver: any;
@@ -46,7 +45,11 @@ describe("IDO", async () => {
   });
 
   it("Grant poolOwner role to POOL_OWNER_PK account", async () => {
+    const success = await idoContract.callStatic.grantPoolOwnerRole(
+      poolOwner.address
+    );
     await idoContract.grantPoolOwnerRole(poolOwner.address);
+    expect(success);
   });
 
   it("create a pool", async () => {
