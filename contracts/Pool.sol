@@ -16,6 +16,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
   mapping(address => ParticipantDetails) private participantsDetails;
   uint256 private _weiRaised;
 
+  event LogPoolContractAddress(address _address);
   event LogPoolStatusChanged(uint256 currentStatus, uint256 newStatus);
   event Deposit(address indexed investor, uint256 amount);
 
@@ -37,6 +38,9 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
       tokenPrice: _poolInfo.tokenPrice,
       totalTokenSold: _poolInfo.totalTokenSold
     });
+
+    emit LogPoolContractAddress(address(this));
+    console.log("Pool Created", address(this));
   }
 
   // accidentally sent ETH's are reverted;
