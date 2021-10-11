@@ -25,9 +25,11 @@
     * other pool related info required by the business
 
 ---
-## Install required packages: 
+# requirements for you to check the work:
+## 1- Install required packages: 
 ``` npm ci ```
-## Deploy and test on local hardhat network 
+## 2- Fill `.env` file
+## 3- Deploy and test on local hardhat network 
 ### note that, it requires an active node on localhost!
 #### To run a hardhat local node: 
 ``` npx hardhat node```
