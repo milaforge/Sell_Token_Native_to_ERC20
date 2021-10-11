@@ -30,7 +30,7 @@
 ## Deploy and test on local hardhat network 
 ### note that, it requires an active node on localhost!
 #### To run a hardhat local node: 
-``` npx hardhar node```
+``` npx hardhat node```
 ### then:
 ``` npx hardhat test```
 
