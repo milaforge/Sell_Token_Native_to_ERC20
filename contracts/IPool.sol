@@ -11,7 +11,7 @@ interface IPool {
     address projectTokenAddress; //the address of the token that project is offering in return
     uint16 minAllocationPerUser;
     uint256 maxAllocationPerUser;
-    uint status; //: by default “Upcoming”,
+    PoolStatus status; //: by default “Upcoming”,
     uint256 totalTokenProvided;
     uint256 exchangeRate;
     uint256 tokenPrice;
@@ -25,14 +25,17 @@ interface IPool {
 
   // Pool data that needs to be retrieved:
   struct PoolDetails {
-    ParticipantDetails[] investorsAndAllocations;
-    uint256 countOfInvestors;
     uint256 totalRaised;
     uint256 hardCap;
     uint256 softCap;
     uint16 minAllocationPerUser;
     uint256 maxAllocationPerUser;
     uint256 startDateTime;
+  }
+
+  struct Participations {
+    ParticipantDetails[] investorsDetails;
+    uint256 count;
   }
 
   enum PoolStatus {
@@ -50,5 +53,10 @@ interface IPool {
     view
     returns (PoolDetails memory poolDetails);
 
-  function updatePoolStatus(uint _newStatus) external;
+  function getParticipantsInfo()
+    external
+    view
+    returns (Participations memory participants);
+
+  function updatePoolStatus(uint256 _newStatus) external;
 }
