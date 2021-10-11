@@ -1,6 +1,5 @@
 import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-ethers";
-import "@openzeppelin/hardhat-upgrades";
 import { task } from "hardhat/config";
 require("dotenv").config();
 
