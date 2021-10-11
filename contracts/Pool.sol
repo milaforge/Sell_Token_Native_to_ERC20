@@ -31,7 +31,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
       projectTokenAddress: _poolInfo.projectTokenAddress,
       minAllocationPerUser: _poolInfo.minAllocationPerUser,
       maxAllocationPerUser: _poolInfo.maxAllocationPerUser,
-      status: uint256(IPool.PoolStatus.Ongoing),
+      status: IPool.PoolStatus.Upcoming,
       totalTokenProvided: _poolInfo.totalTokenProvided,
       exchangeRate: _poolInfo.exchangeRate,
       tokenPrice: _poolInfo.tokenPrice,
@@ -44,9 +44,10 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     revert("use deposit() method.");
   }
 
-  function updatePoolStatus(uint256 _newStatus) external override {
-    uint256 currentStatus = poolInformation.status;
-    poolInformation.status = _newStatus;
+  function updatePoolStatus(uint256 _newStatus) external override onlyOwner {
+    require(_newStatus < 5, "wrong Status;");
+    uint256 currentStatus = uint256(poolInformation.status);
+    poolInformation.status = PoolStatus(_newStatus);
     emit LogPoolStatusChanged(currentStatus, _newStatus);
   }
 
@@ -57,22 +58,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     poolIsCreated(poolInformation)
     returns (PoolDetails memory poolDetails)
   {
-    uint256 count = participantsAddress.length - 1;
-
-    ParticipantDetails[] memory investorsInfo = new ParticipantDetails[](count);
-
-    for (uint256 i = 0; i < participantsAddress.length; i++) {
-      address userAddress = participantsAddress[i];
-
-      investorsInfo[i] = ParticipantDetails({
-        addressOfParticipant: userAddress,
-        totalRaisedInWei: participantsDetails[userAddress].totalRaisedInWei
-      });
-    }
-
     poolDetails = PoolDetails({
-      investorsAndAllocations: investorsInfo,
-      countOfInvestors: investorsInfo.length,
       totalRaised: getTotalRaised(),
       hardCap: poolInformation.hardCap,
       softCap: poolInformation.softCap,
@@ -80,6 +66,24 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
       maxAllocationPerUser: poolInformation.maxAllocationPerUser,
       startDateTime: poolInformation.startDateTime
     });
+  }
+
+  function getParticipantsInfo()
+    external
+    view
+    override
+    poolIsCreated(poolInformation)
+    returns (Participations memory participants)
+  {
+    uint256 count = participantsAddress.length;
+    ParticipantDetails[] memory parts = new ParticipantDetails[](count);
+
+    for (uint256 i = 0; i < participantsAddress.length; i++) {
+      address userAddress = participantsAddress[i];
+      parts[i] = participantsDetails[userAddress];
+    }
+    participants.count = count;
+    participants.investorsDetails = parts;
   }
 
   function deposit()
@@ -95,7 +99,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     uint256 _weiBeforeRaise = _weiRaised;
     _weiRaised += msg.value;
     success = _weiRaised > _weiBeforeRaise;
-    require(success, "Deposit failed!");
+    require(success, "Deposit overflow?!");
     emit Deposit(_msgSender(), msg.value);
   }
 
@@ -119,8 +123,8 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     require(_poolInfo.softCap > 0, "softCap must be > 0");
     require(_poolInfo.softCap < _poolInfo.hardCap, "softCap must be < hardCap");
 
-    //solhint-disable-next-line not-rely-on-time
     require(
+      //solhint-disable-next-line not-rely-on-time
       _poolInfo.startDateTime > block.timestamp,
       "startDateTime must be > now"
     );
@@ -133,10 +137,6 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
       address(_poolInfo.walletAddress) != address(0),
       "walletAddress is a zero address!"
     );
-    require(
-      address(_poolInfo.projectTokenAddress) != address(0),
-      "TokenAddress is a zero address!"
-    );
     require(_poolInfo.minAllocationPerUser > 0, "minAllocation must be > 0!");
     require(
       _poolInfo.minAllocationPerUser < _poolInfo.maxAllocationPerUser,
@@ -144,15 +144,11 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     );
 
     require(
-      _poolInfo.status == uint256(IPool.PoolStatus.Upcoming),
+      IPool.PoolStatus(_poolInfo.status) == IPool.PoolStatus.Upcoming,
       "Pool status must be ongoing!"
     );
     require(_poolInfo.exchangeRate > 0, "exchangeRate must be > 0!");
     require(_poolInfo.tokenPrice > 0, "token price must be > 0!");
-  }
-
-  function _preDepositValidation(uint256 _amount) internal view {
-    //TODO
   }
 
   modifier poolIsCreated(IPool.PoolModel storage _poolInfo) {
@@ -162,7 +158,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
 
   modifier pooIsOngoing(IPool.PoolModel storage _poolInfo) {
     require(
-      _poolInfo.status == uint256(IPool.PoolStatus.Ongoing) &&
+      uint256(_poolInfo.status) == uint256(IPool.PoolStatus.Ongoing) &&
         // solhint-disable-next-line not-rely-on-time
         _poolInfo.startDateTime >= block.timestamp &&
         // solhint-disable-next-line not-rely-on-time
@@ -172,7 +168,6 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     _;
   }
 
-  // make sure hardCap not passed
   modifier hardCapNotPassed(uint256 _hardCap, uint256 _depositAmount) {
     require(
       address(this).balance + // TODO can I access pool balance from here?
