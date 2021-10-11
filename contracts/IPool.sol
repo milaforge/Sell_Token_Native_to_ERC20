@@ -21,13 +21,8 @@ interface IPool {
     uint256 totalTokenSold;
   }
 
-  struct ParticipantDetails {
-    address addressOfParticipant;
-    uint256 totalRaisedInWei;
-  }
-
   // Pool data that needs to be retrieved:
-  struct PoolDetails {
+  struct CompletePoolDetails {
     Participations participationDetails;
     PoolModel poolInfo;
     PoolDetailedInfo poolDetails;
@@ -37,6 +32,11 @@ interface IPool {
   struct Participations {
     ParticipantDetails[] investorsDetails;
     uint256 count;
+  }
+
+  struct ParticipantDetails {
+    address addressOfParticipant;
+    uint256 totalRaisedInWei;
   }
 
   enum PoolStatus {
@@ -49,14 +49,13 @@ interface IPool {
 
   function deposit() external payable returns (bool success);
 
-  function addPoolDetailedInfo(
-PoolDetailedInfo memory _detailedPoolInfo
-  ) external;
+  function addPoolDetailedInfo(PoolDetailedInfo memory _detailedPoolInfo)
+    external;
 
-  function getPoolDetails()
+  function getCompletePoolDetails()
     external
     view
-    returns (PoolDetails memory poolDetails);
+    returns (CompletePoolDetails memory poolDetails);
 
   function getParticipantsInfo()
     external

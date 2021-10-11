@@ -70,7 +70,7 @@ describe("IDO", async () => {
   });
 
   it("get pool information", async () => {
-    const poolDetails = await idoContract.getPoolDetails();
+    const poolDetails = await idoContract.getCompletePoolDetails();
     
     expect(poolDetails.poolInfo.softCap.toString()).be.equal("500");
     expect(poolDetails.poolDetails.exchangeRate.toString()).be.equal("1");

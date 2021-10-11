@@ -67,14 +67,14 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     emit LogPoolStatusChanged(currentStatus, _newStatus);
   }
 
-  function getPoolDetails()
+  function getCompletePoolDetails()
     external
     view
     override
     poolIsCreated(poolInformation)
-    returns (PoolDetails memory poolDetails)
+    returns (CompletePoolDetails memory poolDetails)
   {
-    poolDetails = IPool.PoolDetails({
+    poolDetails = CompletePoolDetails({
       participationDetails: getParticipantsInfo(),
       totalRaised: getTotalRaised(),
       poolInfo: poolInformation,
@@ -109,7 +109,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     hardCapNotPassed(poolInformation.hardCap, msg.value)
     returns (bool success)
   {
-    addToParticipants(_msgSender());
+    _addToParticipants(_msgSender());
     uint256 _weiBeforeRaise = _weiRaised;
     _weiRaised += msg.value;
     success = _weiRaised > _weiBeforeRaise;
@@ -121,7 +121,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     amount = _weiRaised;
   }
 
-  function addToParticipants(address _address) private {
+  function _addToParticipants(address _address) private {
     if (participantsDetails[_address].totalRaisedInWei < 1) {
       participantsAddress.push(_address);
     }

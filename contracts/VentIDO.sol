@@ -93,12 +93,12 @@ contract VentIDO is Pausable, AccessControl, Whitelist, Ownable {
     );
   }
 
-  function getPoolDetails()
+  function getCompletePoolDetails()
     external
     view
-    returns (IPool.PoolDetails memory poolDetails)
+    returns (IPool.CompletePoolDetails memory poolDetails)
   {
-    poolDetails = pool.getPoolDetails();
+    poolDetails = pool.getCompletePoolDetails();
   }
 
   function updatePoolStatus(uint256 newStatus)
