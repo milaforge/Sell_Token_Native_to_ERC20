@@ -2,6 +2,7 @@ import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-ethers";
 import "@openzeppelin/hardhat-upgrades";
 import { task } from "hardhat/config";
+require("dotenv").config();
 
 // https://hardhat.org/guides/create-task.html
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
@@ -12,32 +13,18 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
-task("balance", "get balance of first account")
-  .addParam("acc", "Account address to get it's balance")
-  .setAction(async (taskArgs, hre) => {
-    const account = taskArgs.acc;
-
-    const balance = await hre.ethers.getDefaultProvider().getBalance(account);
-    console.log(balance);
-  });
-
 task(
   "deploy",
   "Deploy smart contracts to local network",
   async (taskArgs, hre, runSuper) => {
     hre.run("compile");
-    const poolContract = await hre.ethers.getContractFactory("Pool");
-    const pool = await poolContract.deploy(1);
-    console.log(`Contract deployed at ${pool.address}`);
+    const IDO = await hre.ethers.getContractFactory("VentIDO");
+    console.log("Deploying contract ...");
+    const ido = await IDO.deploy();
+    console.log(`IDO Contract deployed at ${ido.address}`);
+    process.exit(0);
   }
 );
-
-// task("compile", "Compile contracts", async () => {
-//   console.log("Compile task called");
-// });
-
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -48,9 +35,19 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 200
-      }
-    }
+        runs: 200,
+      },
+    },
+  },
+  networks: {
+    rinkeby: {
+      url: process.env.NETWORK_GATEWAY_API,
+      accounts: [
+        process.env.POOL_OWNER_PK,
+        process.env.DEPLOYER_PK,
+        process.env.RAISED_WEI_RECEIVER_PK,
+      ],
+    },
   },
   defaultNetwork: "localhost",
 };

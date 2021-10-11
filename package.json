@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "deployTestNet": "npx hardhat deploy --network rinkeby",
+    "deployLocal" :"npx hardhat deploy",
     "test": "npx hardhat test",
     "prettier:solidity": "./node_modules/.bin/prettier --write contracts/**/*.sol",
     "solhint": "solhint -f table contracts/**/*.sol"
@@ -41,6 +42,7 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.3.2",
-    "bignumber.js": "^9.0.1"
+    "bignumber.js": "^9.0.1",
+    "dotenv": "^10.0.0"
   }
 }

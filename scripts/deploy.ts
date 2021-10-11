@@ -1,19 +1,18 @@
-import hre from "hardhat";
+import hre, { ethers } from "hardhat";
 
-async function main() {
-  const Token = await hre.ethers.getContractFactory("TKN");
-  const token = await Token.deploy("Token", "TKN");
+(async () => {
+  try {
+    const [deployer] = await ethers.getSigners();
+    console.log(`Deploying contract using :${deployer.address} account.`);
 
-  console.log("Contract deployed to:", token.address);
-  console.log(
-    "Total supply is:",
-    hre.ethers.utils.formatEther((await token.totalSupply()).toString())
-  );
-}
+    const IDO = await hre.ethers.getContractFactory("VentIDO");
+    const ido = await IDO.deploy();
 
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
+    console.log(`Contract deployed at: ${ido.address}`);
+
+    process.exit(0);
+  } catch (error) {
     console.error(error);
     process.exit(1);
-  });
+  }
+})();

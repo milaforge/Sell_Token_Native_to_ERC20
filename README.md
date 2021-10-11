@@ -1,6 +1,12 @@
 # Sample IDO application Contract
 ## report security vulnerabilities 
-` to my@email.com`
+` to e@email.com`
 
-DateTime related stuff:
-    https://consensys.github.io/smart-contract-best-practices/recommendations/#timestamp-dependence
+## deploy on Rinkeby:
+fill DEPLOYER_PK environment variable using .env file with your accounts private key. then
+```npx hardhat deploy --network rinkeby```
+or 
+```npx hardhat run scripts/deploy.ts --network rinkeby```
+
+## deploy on local hardhat node:
+``` npx hardhat deploy```
