@@ -59,6 +59,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     returns (PoolDetails memory poolDetails)
   {
     poolDetails = PoolDetails({
+      participationDetails: getParticipantsInfo(),
       totalRaised: getTotalRaised(),
       hardCap: poolInformation.hardCap,
       softCap: poolInformation.softCap,
@@ -69,7 +70,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
   }
 
   function getParticipantsInfo()
-    external
+    public
     view
     override
     poolIsCreated(poolInformation)
