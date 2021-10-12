@@ -36,23 +36,20 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     console.log("Pool Created", address(this));
   }
 
-  function addPoolDetailedInfo(PoolDetailedInfo memory _detailedPoolInfo)
+  function addPoolDetailedInfo(PoolDetailedInfo memory _pdi)
     external
     override
     onlyOwner
   {
-    _prePoolDetailUpdate(_detailedPoolInfo);
-    poolDetailedInfo.walletAddress = _detailedPoolInfo.walletAddress;
-    poolDetailedInfo.projectTokenAddress = _detailedPoolInfo
-      .projectTokenAddress;
-    poolDetailedInfo.minAllocationPerUser = _detailedPoolInfo
-      .minAllocationPerUser;
-    poolDetailedInfo.maxAllocationPerUser = _detailedPoolInfo
-      .maxAllocationPerUser;
-    poolDetailedInfo.totalTokenProvided = _detailedPoolInfo.totalTokenProvided;
-    poolDetailedInfo.exchangeRate = _detailedPoolInfo.exchangeRate;
-    poolDetailedInfo.tokenPrice = _detailedPoolInfo.tokenPrice;
-    poolDetailedInfo.totalTokenSold = _detailedPoolInfo.totalTokenSold;
+    _prePoolDetailUpdate(_pdi);
+    poolDetailedInfo.walletAddress = _pdi.walletAddress;
+    poolDetailedInfo.projectTokenAddress = _pdi.projectTokenAddress;
+    poolDetailedInfo.minAllocationPerUser = _pdi.minAllocationPerUser;
+    poolDetailedInfo.maxAllocationPerUser = _pdi.maxAllocationPerUser;
+    poolDetailedInfo.totalTokenProvided = _pdi.totalTokenProvided;
+    poolDetailedInfo.exchangeRate = _pdi.exchangeRate;
+    poolDetailedInfo.tokenPrice = _pdi.tokenPrice;
+    poolDetailedInfo.totalTokenSold = _pdi.totalTokenSold;
   }
 
   // accidentally sent ETH's are reverted;
@@ -177,7 +174,7 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
 
   modifier pooIsOngoing(IPool.PoolModel storage _poolInfo) {
     require(
-      uint256(_poolInfo.status) == uint256(IPool.PoolStatus.Ongoing) &&
+      _poolInfo.status == IPool.PoolStatus.Ongoing &&
         // solhint-disable-next-line not-rely-on-time
         _poolInfo.startDateTime >= block.timestamp &&
         // solhint-disable-next-line not-rely-on-time
