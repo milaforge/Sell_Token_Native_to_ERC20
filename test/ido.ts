@@ -105,4 +105,21 @@ describe("IDO", async () => {
       expect(true);
     }
   });
+
+  it("pool only accepts deposit if it's status in Ongoing", async () => {});
+
+  it("PoolOwner should be able to change pool status to onGoing", async () => {
+    const PoolStatus = {
+      Upcoming: 0,
+      Ongoing: 1,
+      Finished: 2,
+      Paused: 3,
+      Cancelled: 4,
+    };
+    await idoContract.connect(poolOwner).updatePoolStatus(PoolStatus.Ongoing);
+
+    const completePoolInfo = await idoContract.getCompletePoolDetails();
+    expect(completePoolInfo.poolInfo.status).be.equal(PoolStatus.Ongoing);
+  });
+
 });
