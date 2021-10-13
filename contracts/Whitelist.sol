@@ -10,7 +10,7 @@ contract Whitelist is Context {
   event AddedToWhitelist(address indexed account);
   event RemovedFromWhitelist(address indexed accout);
 
-  function addToWhitelist(address[] memory _addresses)
+  function addToWhitelist(address[] calldata _addresses)
     internal
     returns (bool success)
   {

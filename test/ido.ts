@@ -11,8 +11,12 @@ describe("IDO", async () => {
   let now: any;
   let tomorrow: any;
 
+  let depositor1: any;
+  let depositor2: any;
+
   before(async () => {
-    [, poolOwner, raisedWeiReceiver] = await ethers.getSigners();
+    [, poolOwner, raisedWeiReceiver, depositor1, depositor2] =
+      await ethers.getSigners();
     now = new Date();
     tomorrow = new Date(new Date().setDate(now.getDate() + 1));
   });
@@ -50,7 +54,7 @@ describe("IDO", async () => {
     await idoContract.connect(poolOwner).createPool(
       1000, //hard cap
       500, // soft cap
-      now.getTime(),// start time
+      now.getTime(), // start time
       tomorrow.getTime(), //end time
       0 // status
     );
@@ -71,9 +75,15 @@ describe("IDO", async () => {
 
   it("get pool information", async () => {
     const poolDetails = await idoContract.getCompletePoolDetails();
-    
+
     expect(poolDetails.poolInfo.softCap.toString()).be.equal("500");
     expect(poolDetails.poolDetails.exchangeRate.toString()).be.equal("1");
     expect(poolDetails.participationDetails.count.toString()).be.equal("0");
+  });
+
+  it("PoolOwner adds users to whitelist", async () => {
+    await idoContract
+      .connect(poolOwner)
+      .addAddressesToWhitelist([depositor1.address, depositor2.address]);
   });
 });
