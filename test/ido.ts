@@ -13,10 +13,17 @@ describe("IDO", async () => {
 
   let depositor1: any;
   let depositor2: any;
+  let depositor3NotWhitelisted: any;
 
   before(async () => {
-    [, poolOwner, raisedWeiReceiver, depositor1, depositor2] =
-      await ethers.getSigners();
+    [
+      ,
+      poolOwner,
+      raisedWeiReceiver,
+      depositor1,
+      depositor2,
+      depositor3NotWhitelisted,
+    ] = await ethers.getSigners();
     now = new Date();
     tomorrow = new Date(new Date().setDate(now.getDate() + 1));
   });
@@ -85,5 +92,17 @@ describe("IDO", async () => {
     await idoContract
       .connect(poolOwner)
       .addAddressesToWhitelist([depositor1.address, depositor2.address]);
+  });
+
+  it("should prevent accidental ETH sent to IDO", async () => {
+    try {
+      const txHash = await depositor1.sendTransaction({
+        to: idoContract.address,
+        valu: ethers.utils.parseEther("1.0"),
+      });
+      console.log(txHash);
+    } catch (error) {
+      expect(true);
+    }
   });
 });

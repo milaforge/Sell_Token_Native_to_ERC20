@@ -120,4 +120,8 @@ contract VentIDO is Pausable, AccessControl, Whitelist, Ownable {
     bool success = pool.deposit();
     require(success, "Investing failed!");
   }
+
+  receive() external payable {
+    revert("use investInPool() method.");
+  }
 }
