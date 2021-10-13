@@ -3,8 +3,7 @@
 ## Progress:
 - UC-D1: Create a Pool [Done]
 - UC-D2: Get Pool data [Done]
-- UC-D3: Add Users to whitelist of a Pool [Not Finished]
-
+- UC-D3: Add Users to whitelist of a Pool [Done]
 ---
 ## 1- Install required packages: 
 ``` npm ci ```
