@@ -11,6 +11,7 @@ interface IPool {
   }
 
   struct PoolDetailedInfo {
+    address whitelistContractAddress;
     address walletAddress; // address where Ether is sent
     address projectTokenAddress; //the address of the token that project is offering in return
     uint16 minAllocationPerUser;
@@ -47,8 +48,6 @@ interface IPool {
     Cancelled
   }
 
-  function deposit() external payable returns (bool success);
-
   function addPoolDetailedInfo(PoolDetailedInfo memory _detailedPoolInfo)
     external;
 
@@ -57,10 +56,7 @@ interface IPool {
     view
     returns (CompletePoolDetails memory poolDetails);
 
-  function getParticipantsInfo()
-    external
-    view
-    returns (Participations memory participants);
-
   function updatePoolStatus(uint256 _newStatus) external;
+
+  function deposit(address _sender) external payable;
 }

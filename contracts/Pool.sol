@@ -2,21 +2,21 @@
 pragma solidity 0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./IPool.sol";
-import "./Whitelist.sol";
-
+import "./IWhitelist.sol";
+import "./Validations.sol";
 import "hardhat/console.sol";
 
-contract Pool is IPool, Whitelist, AccessControl, Ownable {
+contract Pool is IPool, Ownable {
   PoolModel private poolInformation; // pool information
   PoolDetailedInfo private poolDetailedInfo; // ido information (pool details)
+  IWhitelist private whitelist;
 
   address[] private participantsAddress;
-  mapping(address => ParticipantDetails) private participantsDetails;
-  uint256 private _weiRaised;
+  mapping(address => uint256) private participations;
+  uint256 private _weiRaised = 0;
 
   event LogPoolContractAddress(address _address);
   event LogPoolStatusChanged(uint256 currentStatus, uint256 newStatus);
@@ -42,6 +42,9 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     onlyOwner
   {
     _prePoolDetailUpdate(_pdi);
+
+    whitelist = IWhitelist(_pdi.whitelistContractAddress); // Whitelist address
+
     poolDetailedInfo.walletAddress = _pdi.walletAddress;
     poolDetailedInfo.projectTokenAddress = _pdi.projectTokenAddress;
     poolDetailedInfo.minAllocationPerUser = _pdi.minAllocationPerUser;
@@ -52,9 +55,25 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     poolDetailedInfo.totalTokenSold = _pdi.totalTokenSold;
   }
 
-  // accidentally sent ETH's are reverted;
-  receive() external payable pooIsOngoing(poolInformation) {
-    revert("use deposit() method.");
+  receive() external payable {
+    revert("Call deposit()");
+  }
+
+  function deposit(address _sender)
+    external
+    payable
+    override
+    onlyOwner
+    pooIsOngoing(poolInformation)
+    hardCapNotPassed(poolInformation.hardCap, msg.value)
+    isWhitelisted(_sender)
+  {
+    uint256 _amount = msg.value;
+    increaseRaisedWEI(_amount);
+    _addToParticipants(_sender);
+    emit Deposit(_sender, _amount);
+
+    console.log("Pool Balance", address(this).balance); //TODO debug
   }
 
   function updatePoolStatus(uint256 _newStatus) external override onlyOwner {
@@ -68,7 +87,6 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     external
     view
     override
-    poolIsCreated(poolInformation)
     returns (CompletePoolDetails memory poolDetails)
   {
     poolDetails = CompletePoolDetails({
@@ -80,50 +98,57 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
   }
 
   function getParticipantsInfo()
-    public
+    private
     view
-    override
-    poolIsCreated(poolInformation)
     returns (Participations memory participants)
   {
     uint256 count = participantsAddress.length;
+
     ParticipantDetails[] memory parts = new ParticipantDetails[](count);
 
-    for (uint256 i = 0; i < participantsAddress.length; i++) {
+    for (uint256 i = 0; i < count; i++) {
       address userAddress = participantsAddress[i];
-      parts[i] = participantsDetails[userAddress];
+      parts[i] = ParticipantDetails(userAddress, participations[userAddress]);
     }
     participants.count = count;
     participants.investorsDetails = parts;
   }
 
-  function deposit()
-    external
-    payable
-    override
-    onlyWhitelisted
-    pooIsOngoing(poolInformation)
-    hardCapNotPassed(poolInformation.hardCap, msg.value)
-    returns (bool success)
-  {
-    _addToParticipants(_msgSender());
-    uint256 _weiBeforeRaise = _weiRaised;
-    _weiRaised += msg.value;
-    success = _weiRaised > _weiBeforeRaise;
-    require(success, "Deposit overflow?!");
-    emit Deposit(_msgSender(), msg.value);
-  }
-
-  function getTotalRaised() internal view returns (uint256 amount) {
+  function getTotalRaised() private view returns (uint256 amount) {
     amount = _weiRaised;
   }
 
+  function increaseRaisedWEI(uint256 _amount) private {
+    require(_amount > 0, "No WEI found!");
+
+    uint256 _weiBeforeRaise = getTotalRaised();
+    _weiRaised += msg.value;
+
+    assert(_weiRaised > _weiBeforeRaise); //TODO requires more research
+  }
+
   function _addToParticipants(address _address) private {
-    if (participantsDetails[_address].totalRaisedInWei < 1) {
-      participantsAddress.push(_address);
-    }
-    participantsDetails[_address].addressOfParticipant = _address;
-    participantsDetails[_address].totalRaisedInWei += msg.value;
+    if (didAlreadyParticipated(_address)) addToListOfParticipants(_address);
+    keepRecordOfWEIRaised(_address);
+  }
+
+  function didAlreadyParticipated(address _address)
+    private
+    view
+    returns (bool isIt)
+  {
+    isIt = participations[_address] > 0; //TODO is it safe?
+  }
+
+  function addToListOfParticipants(address _address) private {
+    participantsAddress.push(_address);
+  }
+
+  function keepRecordOfWEIRaised(address _address)
+    private
+  {
+    participations[_address] += msg.value;
+    console.log(_address, "Participated", msg.value);
   }
 
   function _preValidatePoolCreation(IPool.PoolModel memory _poolInfo)
@@ -167,20 +192,16 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
     require(_poolDetailedInfo.tokenPrice > 0, "token price must be > 0!");
   }
 
-  modifier poolIsCreated(IPool.PoolModel storage _poolInfo) {
-    require(_poolInfo.hardCap > 0, "Pool not created yet!");
-    _;
-  }
-
   modifier pooIsOngoing(IPool.PoolModel storage _poolInfo) {
     require(
       _poolInfo.status == IPool.PoolStatus.Ongoing &&
         // solhint-disable-next-line not-rely-on-time
         _poolInfo.startDateTime >= block.timestamp &&
         // solhint-disable-next-line not-rely-on-time
-        _poolInfo.endDateTime <= block.timestamp,
+        _poolInfo.endDateTime >= block.timestamp,
       "Pool not open!"
     );
+
     _;
   }
 
@@ -191,6 +212,12 @@ contract Pool is IPool, Whitelist, AccessControl, Ownable {
         _hardCap,
       "hardCap reached!"
     );
+    _;
+  }
+
+  modifier isWhitelisted(address _address) {
+    console.log(msg.sender, _address);
+    require(whitelist.isWhitelisted(_address), "Not whitelisted");
     _;
   }
 }
