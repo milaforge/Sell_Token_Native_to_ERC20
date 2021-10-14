@@ -1,71 +1,88 @@
 //SPDX-License-Identifier: MIT
 pragma solidity 0.8.0;
-import "@openzeppelin/contracts/utils/Context.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "hardhat/console.sol";
 
-contract Whitelist is Context {
-  mapping(address => bool) internal _whitelistedUsers;
+import "./IWhitelist.sol";
+import "./Validations.sol";
 
-  uint256 internal countOfUsersWhitelisted = 0;
+contract Whitelist is IWhitelist, Ownable {
+  mapping(address => bool) private whitelistedAddressesMap;
+  address[] private whitelistedAddressesArray;
 
-  event AddedToWhitelist(address indexed account);
-  event RemovedFromWhitelist(address indexed accout);
+  constructor() {}
 
   function addToWhitelist(address[] calldata _addresses)
-    internal
+    external
+    override
+    onlyOwner
     returns (bool success)
   {
-    require(_addresses.length > 0, "an array of address is expected!");
+    require(_addresses.length > 0, "an array of address is expected");
 
     for (uint256 i = 0; i < _addresses.length; i++) {
       address userAddress = _addresses[i];
 
-      require(addressNotZero(userAddress), "zero address is not accepted!");
+      Validations.revertOnZeroAddress(userAddress);
 
-      bool whitelisted = _whitelistedUsers[userAddress];
-      if (!whitelisted) {
-        _whitelistedUsers[userAddress] == true;
-        countOfUsersWhitelisted++;
-        emit AddedToWhitelist(userAddress);
-      }
+      if (!isAddressWhitelisted(userAddress))
+        addAddressToWhitelist(userAddress);
     }
     success = true;
   }
 
-  function _removeFromWhitelist(address _address)
-    internal
-    nonZeroAddress(_address)
-    removeOnlyOnce(_address)
-  {
-    _whitelistedUsers[_address] = false;
-    countOfUsersWhitelisted--;
-    emit RemovedFromWhitelist(_address);
-  }
-
-  function _isWhitelisted(address _address)
-    internal
+  function isWhitelisted(address _address)
+    external
     view
-    nonZeroAddress(_address)
-    returns (bool isWhiteListed)
+    override
+    _nonZeroAddress(_address)
+    returns (bool isIt)
   {
-    isWhiteListed = _whitelistedUsers[_address];
+    isIt = whitelistedAddressesMap[_address];
   }
 
-  function addressNotZero(address _address) private pure returns (bool isZero) {
-    isZero = (address(0) != address(_address));
+  function getWhitelistedUsers()
+    external
+    view
+    override
+    onlyOwner
+    returns (address[] memory)
+  {
+    uint256 count = whitelistedAddressesArray.length;
+
+    address[] memory _whitelistedAddresses = new address[](count);
+
+    for (uint256 i = 0; i < count; i++) {
+      _whitelistedAddresses[i] = whitelistedAddressesArray[i];
+    }
+    return _whitelistedAddresses;
   }
 
-  modifier nonZeroAddress(address _address) {
-    require(addressNotZero(_address), "zero address not accepted!");
+  modifier _nonZeroAddress(address _address) {
+    Validations.revertOnZeroAddress(_address);
     _;
   }
 
-  modifier onlyWhitelisted() {
-    require(_isWhitelisted(_msgSender()), "Not Whitelisted");
-    _;
+  function isAddressWhitelisted(address _address)
+    private
+    view
+    returns (bool isIt)
+  {
+    isIt = whitelistedAddressesMap[_address];
   }
 
-  modifier removeOnlyOnce(address _address) {
-    require(_whitelistedUsers[_address], "removing non existent address!");
-    _;
+  function addAddressToWhitelist(address _address) private {
+    whitelistedAddressesMap[_address] = true;
+    whitelistedAddressesArray.push(_address);
+    emit AddedToWhitelist(_address);
+
+    //TODO debug
+    console.log(
+      "user",
+      _address,
+      " Added to whitelist",
+      whitelistedAddressesMap[_address]
+    );
+    console.log(whitelistedAddressesArray.length);
   }
 }
