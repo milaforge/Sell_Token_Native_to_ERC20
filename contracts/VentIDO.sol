@@ -12,13 +12,16 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 
 import "./IPool.sol";
 import "./Pool.sol";
+import "./IWhitelist.sol";
 import "./Whitelist.sol";
+import "./Validations.sol";
 
 import "hardhat/console.sol"; //TODO debug
 
-contract VentIDO is Pausable, AccessControl, Whitelist, Ownable {
+contract VentIDO is Pausable, AccessControl, Ownable {
   bytes32 private constant POOL_OWNER_ROLE = keccak256("POOL_OWNER_ROLE");
   IPool private pool;
+  IWhitelist private whitelist;
 
   event LogPoolOwnerRoleGranted(address indexed owner);
   event LogPoolOwnerRoleRevoked(address indexed owner);
@@ -27,13 +30,14 @@ contract VentIDO is Pausable, AccessControl, Whitelist, Ownable {
 
   constructor() {
     _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    whitelist = new Whitelist(); //Deploy whitelist and share its address to Pool contract during addPoolDetailedInfo();
   }
 
   // Admin grants PoolOwner role to some address;
   function grantPoolOwnerRole(address _address)
     external
     onlyOwner
-    nonZeroAddress(_address)
+    _nonZeroAddress(_address)
     returns (bool success)
   {
     grantRole(POOL_OWNER_ROLE, _address);
@@ -44,7 +48,7 @@ contract VentIDO is Pausable, AccessControl, Whitelist, Ownable {
   function revokePoolOwnerRole(address _address)
     external
     onlyOwner
-    nonZeroAddress(_address)
+    _nonZeroAddress(_address)
   {
     revokeRole(POOL_OWNER_ROLE, _address);
   }
@@ -81,6 +85,7 @@ contract VentIDO is Pausable, AccessControl, Whitelist, Ownable {
   ) external onlyRole(POOL_OWNER_ROLE) {
     pool.addPoolDetailedInfo(
       IPool.PoolDetailedInfo({
+        whitelistContractAddress: address(whitelist), //share Whitelist contract address
         walletAddress: _walletAddress,
         projectTokenAddress: _projectTokenAddress,
         minAllocationPerUser: _minAllocationPerUser,
@@ -113,15 +118,20 @@ contract VentIDO is Pausable, AccessControl, Whitelist, Ownable {
     external
     onlyRole(POOL_OWNER_ROLE)
   {
-    addToWhitelist(whitelistedAddresses);
+    whitelist.addToWhitelist(whitelistedAddresses);
   }
 
-  function investInPool() external payable {
-    bool success = pool.deposit();
-    require(success, "Investing failed!");
-  }
-
+  // Users invest in pool by just sending ETH to this contract;
   receive() external payable {
-    revert("use investInPool() method.");
+    pool.deposit{value: msg.value}(msg.sender);
+    // address payable poolAddress = payable(address(pool));
+    //  (bool success) = poolAddress.call{value: (msg.value)}("");
+    // require(success, "Transfer Failed!");
+    console.log("IDO Balance:", address(this).balance);
+  }
+
+  modifier _nonZeroAddress(address _address) {
+    Validations.revertOnZeroAddress(_address);
+    _;
   }
 }
