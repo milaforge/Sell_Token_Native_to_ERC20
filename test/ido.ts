@@ -3,6 +3,7 @@ const { ethers, Web3, web3 } = require("hardhat");
 require("dotenv").config();
 
 let idoContract: any;
+let poolContractAddress: string; // to get its balance ?
 
 describe("IDO", async () => {
   let poolOwner: any;
@@ -14,6 +15,9 @@ describe("IDO", async () => {
   let depositor1: any;
   let depositor2: any;
   let depositor3NotWhitelisted: any;
+
+  const hardCap = ethers.utils.parseEther("10000");
+  const softCap = ethers.utils.parseEther("5000");
 
   before(async () => {
     [
@@ -59,8 +63,8 @@ describe("IDO", async () => {
 
   it("[1/2] create a pool", async () => {
     await idoContract.connect(poolOwner).createPool(
-      1000, //hard cap
-      500, // soft cap
+      hardCap,
+      softCap,
       now.getTime(), // start time
       tomorrow.getTime(), //end time
       0 // status
@@ -82,8 +86,10 @@ describe("IDO", async () => {
 
   it("get pool information", async () => {
     const poolDetails = await idoContract.getCompletePoolDetails();
-
-    expect(poolDetails.poolInfo.softCap.toString()).be.equal("500");
+    poolContractAddress = poolDetails.poolDetails.poolContractAddress;
+    expect(ethers.utils.formatEther(poolDetails.poolInfo.softCap)).be.equal(
+      ethers.utils.formatEther(softCap)
+    );
     expect(poolDetails.poolDetails.exchangeRate.toString()).be.equal("1");
     expect(poolDetails.participationDetails.count.toString()).be.equal("0");
   });
@@ -121,5 +127,4 @@ describe("IDO", async () => {
     const completePoolInfo = await idoContract.getCompletePoolDetails();
     expect(completePoolInfo.poolInfo.status).be.equal(PoolStatus.Ongoing);
   });
-
 });
