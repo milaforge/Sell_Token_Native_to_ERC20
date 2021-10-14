@@ -3,7 +3,6 @@ const { ethers, Web3, web3 } = require("hardhat");
 require("dotenv").config();
 
 let idoContract: any;
-let poolContractAddress: string; // to get its balance ?
 
 describe("IDO", async () => {
   let poolOwner: any;
@@ -19,6 +18,14 @@ describe("IDO", async () => {
   const hardCap = ethers.utils.parseEther("10000");
   const softCap = ethers.utils.parseEther("5000");
 
+  const PoolStatus = {
+    Upcoming: 0,
+    Ongoing: 1,
+    Finished: 2,
+    Paused: 3,
+    Cancelled: 4,
+  };
+
   before(async () => {
     [
       ,
@@ -29,7 +36,7 @@ describe("IDO", async () => {
       depositor3NotWhitelisted,
     ] = await ethers.getSigners();
     now = new Date();
-    tomorrow = new Date(new Date().setDate(now.getDate() + 1));
+    tomorrow = now.getTime() + 10000; // new Date(new Date().setDate(now.getDate() + 1));
   });
 
   it("deploy IDO contract using DEPLOYER_PK account", async () => {
@@ -41,13 +48,15 @@ describe("IDO", async () => {
 
   it("only poolOwner can create a pool", async () => {
     try {
-      await idoContract.connect(poolOwner).createPool(
-        1000,
-        500, // how much of the raise will be accepted as successful IDO
-        now.getTime(),
-        tomorrow.getTime(),
-        0 // Status 0 => Upcoming
-      );
+      await idoContract
+        .connect(poolOwner)
+        .createPool(
+          hardCap,
+          softCap,
+          now.getTime(),
+          tomorrow,
+          PoolStatus.Upcoming
+        );
     } catch (error) {
       expect(true);
     }
@@ -66,8 +75,8 @@ describe("IDO", async () => {
       hardCap,
       softCap,
       now.getTime(), // start time
-      tomorrow.getTime(), //end time
-      0 // status
+      tomorrow, // end time
+      PoolStatus.Ongoing
     );
   });
 
@@ -86,12 +95,22 @@ describe("IDO", async () => {
 
   it("get pool information", async () => {
     const poolDetails = await idoContract.getCompletePoolDetails();
-    poolContractAddress = poolDetails.poolDetails.poolContractAddress;
     expect(ethers.utils.formatEther(poolDetails.poolInfo.softCap)).be.equal(
       ethers.utils.formatEther(softCap)
     );
     expect(poolDetails.poolDetails.exchangeRate.toString()).be.equal("1");
     expect(poolDetails.participationDetails.count.toString()).be.equal("0");
+  });
+
+  it("Participants need to be whitelisted to deposit", async () => {
+    try {
+      await depositor1.sendTransaction({
+        to: idoContract.address,
+        value: ethers.utils.parseEther("3.0"),
+      });
+    } catch (error) {
+      expect(true);
+    }
   });
 
   it("PoolOwner adds users to whitelist", async () => {
@@ -100,31 +119,33 @@ describe("IDO", async () => {
       .addAddressesToWhitelist([depositor1.address, depositor2.address]);
   });
 
-  it("should prevent accidental ETH sent to IDO", async () => {
+  it("Whitelisted participants can deposit", async () => {
+    // Depositor only needs to be whitelisted, then just send ETH to pool contract to participate.
+    const balance = async () => (await depositor1.getBalance()).toString();
+
+    const beforeDeposit = ethers.utils.formatEther(await balance());
+
+    await depositor1.sendTransaction({
+      to: idoContract.address,
+      value: ethers.utils.parseEther("3.0"),
+    });
+
+    const afterDeposit = ethers.utils.formatEther(await balance());
+    expect(beforeDeposit - afterDeposit > 0);
+  });
+
+  it("pool only accepts deposit if it's status in Ongoing", async () => {
+    await idoContract.connect(poolOwner).updatePoolStatus(PoolStatus.Upcoming);
+
     try {
-      const txHash = await depositor1.sendTransaction({
+      await depositor1.sendTransaction({
         to: idoContract.address,
-        valu: ethers.utils.parseEther("1.0"),
+        value: ethers.utils.parseEther("1.0"),
       });
-      console.log(txHash);
     } catch (error) {
       expect(true);
     }
-  });
 
-  it("pool only accepts deposit if it's status in Ongoing", async () => {});
-
-  it("PoolOwner should be able to change pool status to onGoing", async () => {
-    const PoolStatus = {
-      Upcoming: 0,
-      Ongoing: 1,
-      Finished: 2,
-      Paused: 3,
-      Cancelled: 4,
-    };
     await idoContract.connect(poolOwner).updatePoolStatus(PoolStatus.Ongoing);
-
-    const completePoolInfo = await idoContract.getCompletePoolDetails();
-    expect(completePoolInfo.poolInfo.status).be.equal(PoolStatus.Ongoing);
   });
 });
