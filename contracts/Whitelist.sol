@@ -75,14 +75,5 @@ contract Whitelist is IWhitelist, Ownable {
     whitelistedAddressesMap[_address] = true;
     whitelistedAddressesArray.push(_address);
     emit AddedToWhitelist(_address);
-
-    //TODO debug
-    console.log(
-      "user",
-      _address,
-      " Added to whitelist",
-      whitelistedAddressesMap[_address]
-    );
-    console.log(whitelistedAddressesArray.length);
   }
 }
