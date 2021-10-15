@@ -3,6 +3,7 @@ const { ethers, Web3, web3 } = require("hardhat");
 require("dotenv").config();
 
 let idoContract: any;
+let rewardTokenContract: any;
 
 describe("IDO", async () => {
   let poolOwner: any;
@@ -166,5 +167,14 @@ describe("IDO", async () => {
     expect(
       ethers.BigNumber.from(totalRaised).eq(ethers.utils.parseEther("1.0"))
     );
+  });
+
+  it("deploy reward Token and give allowance to IDO contract to spend it", async () => {
+    const RT = await ethers.getContractFactory("RewardToken");
+    rewardTokenContract = await RT.deploy("Reward Token", "RTK");
+    expect(rewardTokenContract.address.length > 0);
+
+    // give IDO access to spend
+    // we need Participants to withdraw tokens! how?
   });
 });
