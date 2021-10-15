@@ -128,7 +128,7 @@ contract Pool is IPool, Ownable {
   }
 
   function _addToParticipants(address _address) private {
-    if (didAlreadyParticipated(_address)) addToListOfParticipants(_address);
+    if (!didAlreadyParticipated(_address)) addToListOfParticipants(_address);
     keepRecordOfWEIRaised(_address);
   }
 
@@ -144,9 +144,7 @@ contract Pool is IPool, Ownable {
     participantsAddress.push(_address);
   }
 
-  function keepRecordOfWEIRaised(address _address)
-    private
-  {
+  function keepRecordOfWEIRaised(address _address) private {
     participations[_address] += msg.value;
     console.log(_address, "Participated", msg.value);
   }
