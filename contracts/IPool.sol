@@ -25,7 +25,7 @@ interface IPool {
   // Pool data that needs to be retrieved:
   struct CompletePoolDetails {
     Participations participationDetails;
-    PoolModel poolInfo;
+    PoolModel pool;
     PoolDetailedInfo poolDetails;
     uint256 totalRaised;
   }

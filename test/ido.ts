@@ -3,9 +3,10 @@ const { ethers, Web3, web3 } = require("hardhat");
 require("dotenv").config();
 
 let idoContract: any;
-let rewardTokenContract: any;
+let projectTokenContract: any;
 
 describe("IDO", async () => {
+  let owner: any;
   let poolOwner: any;
   let raisedWeiReceiver: any;
 
@@ -16,8 +17,8 @@ describe("IDO", async () => {
   let depositor2: any;
   let depositor3NotWhitelisted: any;
 
-  const hardCap = ethers.utils.parseEther("10000");
-  const softCap = ethers.utils.parseEther("5000");
+  const hardCapWEI = ethers.utils.parseEther("10000");
+  const softCapWEI = ethers.utils.parseEther("5000");
 
   const PoolStatus = {
     Upcoming: 0,
@@ -29,7 +30,7 @@ describe("IDO", async () => {
 
   before(async () => {
     [
-      ,
+      owner,
       poolOwner,
       raisedWeiReceiver,
       depositor1,
@@ -38,6 +39,21 @@ describe("IDO", async () => {
     ] = await ethers.getSigners();
     now = new Date();
     tomorrow = now.getTime() + 10000; // new Date(new Date().setDate(now.getDate() + 1));
+  });
+
+  it("deploy project Token and give allowance to IDO contract to spend it", async () => {
+    const initialSupply = 1_000_000_000;
+    const RT = await ethers.getContractFactory("ProjectToken");
+    projectTokenContract = await RT.deploy(
+      "Project Token",
+      "RTK",
+      initialSupply
+    );
+    expect(projectTokenContract.address.length > 0);
+    const ownersTokenBalance = await projectTokenContract.balanceOf(
+      owner.address
+    );
+    expect(ethers.BigNumber.from(ownersTokenBalance).eq(initialSupply));
   });
 
   it("deploy IDO contract using DEPLOYER_PK account", async () => {
@@ -52,8 +68,8 @@ describe("IDO", async () => {
       await idoContract
         .connect(poolOwner)
         .createPool(
-          hardCap,
-          softCap,
+          hardCapWEI,
+          softCapWEI,
           now.getTime(),
           tomorrow,
           PoolStatus.Upcoming
@@ -73,8 +89,8 @@ describe("IDO", async () => {
 
   it("[1/2] create a pool", async () => {
     await idoContract.connect(poolOwner).createPool(
-      hardCap,
-      softCap,
+      hardCapWEI,
+      softCapWEI,
       now.getTime(), // start time
       tomorrow, // end time
       PoolStatus.Ongoing
@@ -83,8 +99,8 @@ describe("IDO", async () => {
 
   it("[2/2] add detailed info of the pool", async () => {
     await idoContract.connect(poolOwner).addPoolDetailedInfo(
-      process.env.RAISED_WEI_RECEIVER_ADDRESS, // wei receiver wallet address
-      process.env.TOKEN_ADDRESS, // project token address
+      process.env.RAISED_WEI_RECEIVER_ADDRESS, // project owner
+      projectTokenContract.address,
       1, // min allocation per user
       10, // max allocation per user
       1000000, // total token provided 1_000_000
@@ -95,12 +111,15 @@ describe("IDO", async () => {
   });
 
   it("get pool information", async () => {
-    const poolDetails = await idoContract.getCompletePoolDetails();
-    expect(ethers.utils.formatEther(poolDetails.poolInfo.softCap)).be.equal(
-      ethers.utils.formatEther(softCap)
+    const cpd = await idoContract.getCompletePoolDetails();
+
+    expect(ethers.BigNumber.from(cpd.pool.softCap).eq(softCapWEI));
+    expect(cpd.poolDetails.projectTokenAddress).be.equal(
+      projectTokenContract.address
     );
-    expect(poolDetails.poolDetails.exchangeRate.toString()).be.equal("1");
-    expect(poolDetails.participationDetails.count.toString()).be.equal("0");
+    expect(cpd.pool.status).be.equal(PoolStatus.Ongoing);
+    expect(cpd.poolDetails.exchangeRate.toString()).be.equal("1");
+    expect(cpd.participationDetails.count.toString()).be.equal("0");
   });
 
   it("Participants need to be whitelisted to deposit", async () => {
@@ -167,14 +186,5 @@ describe("IDO", async () => {
     expect(
       ethers.BigNumber.from(totalRaised).eq(ethers.utils.parseEther("1.0"))
     );
-  });
-
-  it("deploy reward Token and give allowance to IDO contract to spend it", async () => {
-    const RT = await ethers.getContractFactory("RewardToken");
-    rewardTokenContract = await RT.deploy("Reward Token", "RTK");
-    expect(rewardTokenContract.address.length > 0);
-
-    // give IDO access to spend
-    // we need Participants to withdraw tokens! how?
   });
 });

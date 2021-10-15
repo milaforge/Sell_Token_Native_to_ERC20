@@ -22,14 +22,14 @@ contract Pool is IPool, Ownable {
   event LogPoolStatusChanged(uint256 currentStatus, uint256 newStatus);
   event Deposit(address indexed investor, uint256 amount);
 
-  constructor(PoolModel memory _poolInfo) {
-    _preValidatePoolCreation(_poolInfo);
+  constructor(PoolModel memory _pool) {
+    _preValidatePoolCreation(_pool);
     poolInformation = IPool.PoolModel({
-      hardCap: _poolInfo.hardCap,
-      softCap: _poolInfo.softCap,
-      startDateTime: _poolInfo.startDateTime,
-      endDateTime: _poolInfo.endDateTime,
-      status: _poolInfo.status
+      hardCap: _pool.hardCap,
+      softCap: _pool.softCap,
+      startDateTime: _pool.startDateTime,
+      endDateTime: _pool.endDateTime,
+      status: _pool.status
     });
 
     emit LogPoolContractAddress(address(this));
@@ -92,7 +92,7 @@ contract Pool is IPool, Ownable {
     poolDetails = CompletePoolDetails({
       participationDetails: getParticipantsInfo(),
       totalRaised: getTotalRaised(),
-      poolInfo: poolInformation,
+      pool: poolInformation,
       poolDetails: poolDetailedInfo
     });
   }
@@ -149,21 +149,21 @@ contract Pool is IPool, Ownable {
     console.log(_address, "Participated", msg.value);
   }
 
-  function _preValidatePoolCreation(IPool.PoolModel memory _poolInfo)
+  function _preValidatePoolCreation(IPool.PoolModel memory _pool)
     private
     view
   {
-    require(_poolInfo.hardCap > 0, "hardCap must be > 0");
-    require(_poolInfo.softCap > 0, "softCap must be > 0");
-    require(_poolInfo.softCap < _poolInfo.hardCap, "softCap must be < hardCap");
+    require(_pool.hardCap > 0, "hardCap must be > 0");
+    require(_pool.softCap > 0, "softCap must be > 0");
+    require(_pool.softCap < _pool.hardCap, "softCap must be < hardCap");
     require(
       //solhint-disable-next-line not-rely-on-time
-      _poolInfo.startDateTime > block.timestamp,
+      _pool.startDateTime > block.timestamp,
       "startDateTime must be > now"
     );
     require(
       //solhint-disable-next-line not-rely-on-time
-      _poolInfo.endDateTime > block.timestamp,
+      _pool.endDateTime > block.timestamp,
       "endDate must be at future time"
     ); //TODO how much in the future?
   }
@@ -190,13 +190,13 @@ contract Pool is IPool, Ownable {
     require(_poolDetailedInfo.tokenPrice > 0, "token price must be > 0!");
   }
 
-  modifier pooIsOngoing(IPool.PoolModel storage _poolInfo) {
+  modifier pooIsOngoing(IPool.PoolModel storage _pool) {
     require(
-      _poolInfo.status == IPool.PoolStatus.Ongoing &&
+      _pool.status == IPool.PoolStatus.Ongoing &&
         // solhint-disable-next-line not-rely-on-time
-        _poolInfo.startDateTime >= block.timestamp &&
+        _pool.startDateTime >= block.timestamp &&
         // solhint-disable-next-line not-rely-on-time
-        _poolInfo.endDateTime >= block.timestamp,
+        _pool.endDateTime >= block.timestamp,
       "Pool not open!"
     );
 
