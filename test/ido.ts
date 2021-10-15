@@ -106,7 +106,7 @@ describe("IDO", async () => {
     try {
       await depositor1.sendTransaction({
         to: idoContract.address,
-        value: ethers.utils.parseEther("3.0"),
+        value: ethers.utils.parseEther("1.0"),
       });
     } catch (error) {
       expect(true);
@@ -127,7 +127,7 @@ describe("IDO", async () => {
 
     await depositor1.sendTransaction({
       to: idoContract.address,
-      value: ethers.utils.parseEther("3.0"),
+      value: ethers.utils.parseEther("1.0"),
     });
 
     const afterDeposit = ethers.utils.formatEther(await balance());
@@ -147,5 +147,24 @@ describe("IDO", async () => {
     }
 
     await idoContract.connect(poolOwner).updatePoolStatus(PoolStatus.Ongoing);
+  });
+
+  it("pool should keep tract of deposits", async () => {
+    const details = await idoContract.getCompletePoolDetails();
+    const participants = details.participationDetails;
+
+    const countOfParticipants = ethers.BigNumber.from(
+      participants.count
+    ).toNumber();
+    expect(countOfParticipants).be.equal(1);
+
+    const depositor1InvestRecord = participants.investorsDetails[0];
+    const p1Address = depositor1InvestRecord.addressOfParticipant;
+    expect(p1Address).be.equal(depositor1.address);
+
+    const totalRaised = depositor1InvestRecord.totalRaisedInWei;
+    expect(
+      ethers.BigNumber.from(totalRaised).eq(ethers.utils.parseEther("1.0"))
+    );
   });
 });
