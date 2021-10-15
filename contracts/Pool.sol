@@ -44,7 +44,7 @@ contract Pool is IPool, Ownable {
     _prePoolDetailUpdate(_pdi);
 
     whitelist = IWhitelist(_pdi.whitelistContractAddress); // Whitelist address
-
+    poolDetailedInfo.whitelistContractAddress = _pdi.whitelistContractAddress;
     poolDetailedInfo.walletAddress = _pdi.walletAddress;
     poolDetailedInfo.projectTokenAddress = _pdi.projectTokenAddress;
     poolDetailedInfo.minAllocationPerUser = _pdi.minAllocationPerUser;
