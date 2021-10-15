@@ -214,7 +214,6 @@ contract Pool is IPool, Ownable {
   }
 
   modifier isWhitelisted(address _address) {
-    console.log(msg.sender, _address);
     require(whitelist.isWhitelisted(_address), "Not whitelisted");
     _;
   }
