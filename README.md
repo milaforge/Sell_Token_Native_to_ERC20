@@ -17,7 +17,6 @@
 
 * Set variables in `.env` file
 
-* start a local node: ` npm run node`
 * `npm run test`
 
 ---
