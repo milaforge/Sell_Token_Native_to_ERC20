@@ -1,5 +1,6 @@
 import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-ethers";
+import "hardhat-tracer";
 import { task } from "hardhat/config";
 require("dotenv").config();
 
@@ -20,7 +21,7 @@ task(
   "Deploy smart contracts to local network",
   async (taskArgs, hre, runSuper) => {
     hre.run("compile");
-    const IDO = await hre.ethers.getContractFactory("VentIDO");
+    const IDO = await hre.ethers.getContractFactory("IDO");
     console.log("Deploying contract ...");
     const ido = await IDO.deploy();
     console.log(`IDO Contract deployed at ${ido.address}`);
