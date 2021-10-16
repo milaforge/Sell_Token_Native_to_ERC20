@@ -43,14 +43,14 @@ module.exports = {
     },
   },
   networks: {
-    rinkeby: {
-      url: process.env.NETWORK_GATEWAY_API,
-      accounts: [
-        process.env.POOL_OWNER_PK,
-        process.env.DEPLOYER_PK,
-        process.env.RAISED_WEI_RECEIVER_PK,
-      ],
-    },
+    // rinkeby: {
+    //   url: process.env.NETWORK_GATEWAY_API,
+    //   accounts: [
+    //     process.env.POOL_OWNER_PRIMARY_KEY,
+    //     process.env.DEPLOYER_PRIMARY_KEY,
+    //     process.env.RAISED_WEI_RECEIVER_PRIMARY_KEY,
+    //   ],
+    // },
   },
   defaultNetwork: "localhost",
 };
