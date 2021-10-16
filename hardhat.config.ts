@@ -52,5 +52,5 @@ module.exports = {
     //   ],
     // },
   },
-  defaultNetwork: "localhost",
+  // defaultNetwork: "localhost",
 };
