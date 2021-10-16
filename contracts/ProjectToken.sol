@@ -9,6 +9,6 @@ contract ProjectToken is ERC20 {
     string memory _symbol,
     uint256 _initialSupply
   ) ERC20(_name, _symbol) {
-    _mint(msg.sender, _initialSupply * (10**18));
+    _mint(msg.sender, _initialSupply);
   }
 }

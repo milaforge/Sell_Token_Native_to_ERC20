@@ -5,7 +5,7 @@ import hre, { ethers } from "hardhat";
     const [deployer] = await ethers.getSigners();
     console.log(`Deploying contract using :${deployer.address} account.`);
 
-    const IDO = await hre.ethers.getContractFactory("VentIDO");
+    const IDO = await hre.ethers.getContractFactory("IDO");
     const ido = await IDO.deploy();
 
     console.log(`Contract deployed at: ${ido.address}`);

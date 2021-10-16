@@ -12,25 +12,25 @@ import "@openzeppelin/contracts/security/Pausable.sol";
 
 import "./IPool.sol";
 import "./Pool.sol";
-import "./IWhitelist.sol";
 import "./Whitelist.sol";
 import "./Validations.sol";
 
 import "hardhat/console.sol"; //TODO debug
 
-contract VentIDO is Pausable, AccessControl, Ownable {
+contract IDO is Pausable, AccessControl, Ownable, Whitelist {
+  mapping(address => bool) private _didRefund; // keep track of users who did refund project token.
   bytes32 private constant POOL_OWNER_ROLE = keccak256("POOL_OWNER_ROLE");
   IPool private pool;
-  IWhitelist private whitelist;
+  IERC20 private projectToken;
 
   event LogPoolOwnerRoleGranted(address indexed owner);
   event LogPoolOwnerRoleRevoked(address indexed owner);
   event LogPoolCreated(address indexed poolOwner);
   event LogPoolStatusChanged(address indexed poolOwner, uint256 newStatus);
+  event LogWithdraw(address indexed participant, uint256 amount);
 
   constructor() {
     _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
-    whitelist = new Whitelist(); //Deploy whitelist and share its address to Pool contract during addPoolDetailedInfo();
   }
 
   // Admin grants PoolOwner role to some address;
@@ -59,7 +59,7 @@ contract VentIDO is Pausable, AccessControl, Ownable {
     uint256 _startDateTime,
     uint256 _endDateTime,
     uint256 _status
-  ) external payable onlyRole(POOL_OWNER_ROLE) returns (IPool) {
+  ) external payable onlyRole(POOL_OWNER_ROLE) returns (bool success) {
     IPool.PoolModel memory model = IPool.PoolModel({
       hardCap: _hardCap,
       softCap: _softCap,
@@ -70,10 +70,10 @@ contract VentIDO is Pausable, AccessControl, Ownable {
 
     pool = new Pool(model);
     emit LogPoolCreated(_msgSender());
-    return pool;
+    success = true;
   }
 
-  function addPoolDetailedInfo(
+  function addIDOInfo(
     address _walletAddress,
     address _projectTokenAddress,
     uint16 _minAllocationPerUser,
@@ -83,9 +83,9 @@ contract VentIDO is Pausable, AccessControl, Ownable {
     uint256 _tokenPrice,
     uint256 _totalTokenSold
   ) external onlyRole(POOL_OWNER_ROLE) {
-    pool.addPoolDetailedInfo(
-      IPool.PoolDetailedInfo({
-        whitelistContractAddress: address(whitelist), //share Whitelist contract address
+    projectToken = IERC20(_projectTokenAddress);
+    pool.addIDOInfo(
+      IPool.IDOInfo({
         walletAddress: _walletAddress,
         projectTokenAddress: _projectTokenAddress,
         minAllocationPerUser: _minAllocationPerUser,
@@ -98,6 +98,23 @@ contract VentIDO is Pausable, AccessControl, Ownable {
     );
   }
 
+  function updatePoolStatus(uint256 newStatus)
+    external
+    onlyRole(POOL_OWNER_ROLE)
+    returns (bool success)
+  {
+    pool.updatePoolStatus(newStatus);
+    emit LogPoolStatusChanged(_msgSender(), newStatus);
+    success = true;
+  }
+
+  function addAddressesToWhitelist(address[] calldata whitelistedAddresses)
+    external
+    onlyRole(POOL_OWNER_ROLE)
+  {
+    addToWhitelist(whitelistedAddresses);
+  }
+
   function getCompletePoolDetails()
     external
     view
@@ -106,32 +123,58 @@ contract VentIDO is Pausable, AccessControl, Ownable {
     poolDetails = pool.getCompletePoolDetails();
   }
 
-  function updatePoolStatus(uint256 newStatus)
-    external
-    onlyRole(POOL_OWNER_ROLE)
-  {
-    pool.updatePoolStatus(newStatus);
-    emit LogPoolStatusChanged(_msgSender(), newStatus);
-  }
-
-  function addAddressesToWhitelist(address[] calldata whitelistedAddresses)
-    external
-    onlyRole(POOL_OWNER_ROLE)
-  {
-    whitelist.addToWhitelist(whitelistedAddresses);
-  }
-
-  // Users invest in pool by just sending ETH to this contract;
-  receive() external payable {
+  // Whitelisted accounts can invest in the Pool by just sending ETH to IDO contract;
+  receive() external payable _onlyWhitelisted(msg.sender) {
     pool.deposit{value: msg.value}(msg.sender);
-    // address payable poolAddress = payable(address(pool));
-    //  (bool success) = poolAddress.call{value: (msg.value)}("");
-    // require(success, "Transfer Failed!");
-    console.log("IDO Balance:", address(this).balance);
   }
 
-  modifier _nonZeroAddress(address _address) {
-    Validations.revertOnZeroAddress(_address);
+  function refund()
+    external
+    _onlyWhitelisted(msg.sender)
+    _refundOnlyOnce(msg.sender)
+  {
+    address _receiver = msg.sender;
+    _didRefund[_receiver] = true;
+
+    uint256 _amount = pool.unclaimedTokens(_receiver);
+    require(_amount > 0, "no participations found!");
+
+    _beforeTransferChecks();
+
+    bool successTokenTransfer = projectToken.transfer(_receiver, _amount);
+    require(successTokenTransfer, "Token transfer failed!");
+
+    console.log("depositor1 balance", projectToken.balanceOf(_receiver));
+
+    _afterTransferAsserts();
+
+    emit LogWithdraw(_receiver, _amount);
+  }
+
+  function poolAddress()
+    external
+    view
+    onlyRole(POOL_OWNER_ROLE)
+    returns (address _pool)
+  {
+    _pool = address(pool);
+  }
+
+  modifier _onlyWhitelisted(address _address) {
+    require(isWhitelisted(_address), "Not Whitelisted!");
     _;
+  }
+
+  modifier _refundOnlyOnce(address _participant) {
+    require(!_didRefund[_participant], "Already claimed!");
+    _;
+  }
+
+  function _beforeTransferChecks() private {
+    //Some business logic, before transfering tokens to recipient
+  }
+
+  function _afterTransferAsserts() private {
+    //Some business logic, after project token transfer is possible
   }
 }

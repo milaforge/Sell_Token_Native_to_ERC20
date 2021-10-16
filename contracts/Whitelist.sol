@@ -3,19 +3,19 @@ pragma solidity 0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 
-import "./IWhitelist.sol";
 import "./Validations.sol";
 
-contract Whitelist is IWhitelist, Ownable {
+contract Whitelist {
   mapping(address => bool) private whitelistedAddressesMap;
   address[] private whitelistedAddressesArray;
+
+  event AddedToWhitelist(address indexed account);
+  event RemovedFromWhitelist(address indexed accout);
 
   constructor() {}
 
   function addToWhitelist(address[] calldata _addresses)
-    external
-    override
-    onlyOwner
+    internal
     returns (bool success)
   {
     require(_addresses.length > 0, "an array of address is expected");
@@ -32,22 +32,15 @@ contract Whitelist is IWhitelist, Ownable {
   }
 
   function isWhitelisted(address _address)
-    external
+    internal
     view
-    override
     _nonZeroAddress(_address)
     returns (bool isIt)
   {
     isIt = whitelistedAddressesMap[_address];
   }
 
-  function getWhitelistedUsers()
-    external
-    view
-    override
-    onlyOwner
-    returns (address[] memory)
-  {
+  function getWhitelistedUsers() internal view returns (address[] memory) {
     uint256 count = whitelistedAddressesArray.length;
 
     address[] memory _whitelistedAddresses = new address[](count);

@@ -10,8 +10,7 @@ interface IPool {
     PoolStatus status; //: by default “Upcoming”,
   }
 
-  struct PoolDetailedInfo {
-    address whitelistContractAddress;
+  struct IDOInfo {
     address walletAddress; // address where Ether is sent
     address projectTokenAddress; //the address of the token that project is offering in return
     uint16 minAllocationPerUser;
@@ -26,7 +25,7 @@ interface IPool {
   struct CompletePoolDetails {
     Participations participationDetails;
     PoolModel pool;
-    PoolDetailedInfo poolDetails;
+    IDOInfo poolDetails;
     uint256 totalRaised;
   }
 
@@ -48,8 +47,7 @@ interface IPool {
     Cancelled
   }
 
-  function addPoolDetailedInfo(PoolDetailedInfo memory _detailedPoolInfo)
-    external;
+  function addIDOInfo(IDOInfo memory _detailedPoolInfo) external;
 
   function getCompletePoolDetails()
     external
@@ -59,4 +57,9 @@ interface IPool {
   function updatePoolStatus(uint256 _newStatus) external;
 
   function deposit(address _sender) external payable;
+
+  function unclaimedTokens(address _participant)
+    external
+    view
+    returns (uint256 _tokensAmount);
 }
