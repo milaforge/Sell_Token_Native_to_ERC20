@@ -104,7 +104,7 @@ describe("IDO", async () => {
     expect(success);
   });
 
-  it("[1/2] create the Pool", async () => {
+  it("[1/2] create the Pool (in onGoing state)", async () => {
     await idoContract.connect(poolOwner).createPool(
       hardCapWEI,
       softCapWEI,
@@ -258,8 +258,4 @@ async function weiBalance(_address: string): Promise<any> {
 
 function compareBigNumbers(a: any, b: any): Promise<any> {
   return ethers.BigNumber.from(a).eq(b);
-}
-
-async function _tokenAllowanceLeft(owner: any, spender: any): Promise<any> {
-  return await projectTokenContract.allowance(owner, spender);
 }
