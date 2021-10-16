@@ -29,6 +29,12 @@ describe("IDO", async () => {
   };
 
   before(async () => {
+
+    if (process.env.NETWORK_GATEWAY_API?.length == 0) {
+      console.error("ERROR: set environment variables first");
+      process.exit(-1);
+    }
+
     [, poolOwner, depositor1, depositor2] = await ethers.getSigners();
     now = new Date();
     tomorrow = now.getTime() + 10000; // new Date(new Date().setDate(now.getDate() + 1));
