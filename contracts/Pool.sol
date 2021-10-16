@@ -2,7 +2,6 @@
 pragma solidity 0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "./IPool.sol";
 import "./Validations.sol";
@@ -31,7 +30,6 @@ contract Pool is IPool, Ownable {
     });
 
     emit LogPoolContractAddress(address(this));
-    console.log("Pool Created", address(this));
   }
 
   function addIDOInfo(IDOInfo memory _pdi) external override onlyOwner {
@@ -139,7 +137,7 @@ contract Pool is IPool, Ownable {
     view
     returns (bool isIt)
   {
-    isIt = collaborations[_address] > 0; //TODO is it safe?
+    isIt = collaborations[_address] > 0;
   }
 
   function _addToListOfParticipants(address _address) private {
@@ -148,7 +146,6 @@ contract Pool is IPool, Ownable {
 
   function _keepRecordOfWEIRaised(address _address) private {
     collaborations[_address] += msg.value;
-    console.log(_address, "Participated", msg.value);
   }
 
   function _preValidatePoolCreation(IPool.PoolModel memory _pool) private view {

@@ -4,18 +4,11 @@ pragma solidity 0.8.0;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
-
-//TODO the following imports will be needed for future use-cases;
-// import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-// import "@openzeppelin/contracts/security/PullPayment.sol";
-// import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./IPool.sol";
-import "./Pool.sol";
 import "./Whitelist.sol";
+import "./Pool.sol";
 import "./Validations.sol";
-
-import "hardhat/console.sol"; //TODO debug
 
 contract IDO is Pausable, AccessControl, Ownable, Whitelist {
   mapping(address => bool) private _didRefund; // keep track of users who did refund project token.
@@ -143,8 +136,6 @@ contract IDO is Pausable, AccessControl, Ownable, Whitelist {
 
     bool successTokenTransfer = projectToken.transfer(_receiver, _amount);
     require(successTokenTransfer, "Token transfer failed!");
-
-    console.log("depositor1 balance", projectToken.balanceOf(_receiver));
 
     _afterTransferAsserts();
 
