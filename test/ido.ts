@@ -4,21 +4,21 @@ require("dotenv").config();
 
 let idoContract: any;
 let projectTokenContract: any;
+let poolContractAddress: any;
 
 describe("IDO", async () => {
-  let owner: any;
   let poolOwner: any;
-  let raisedWeiReceiver: any;
 
   let now: any;
   let tomorrow: any;
 
   let depositor1: any;
   let depositor2: any;
-  let depositor3NotWhitelisted: any;
 
-  const hardCapWEI = ethers.utils.parseEther("10000");
-  const softCapWEI = ethers.utils.parseEther("5000");
+  const hardCapWEI = ethers.utils.parseEther("1000");
+  const softCapWEI = ethers.utils.parseEther("500");
+  let countOfProvidedToken = 1000;
+  const projectTokenInitialSupply = 10000;
 
   const PoolStatus = {
     Upcoming: 0,
@@ -29,41 +29,52 @@ describe("IDO", async () => {
   };
 
   before(async () => {
-    [
-      owner,
-      poolOwner,
-      raisedWeiReceiver,
-      depositor1,
-      depositor2,
-      depositor3NotWhitelisted,
-    ] = await ethers.getSigners();
+    [, poolOwner, depositor1, depositor2] = await ethers.getSigners();
     now = new Date();
     tomorrow = now.getTime() + 10000; // new Date(new Date().setDate(now.getDate() + 1));
   });
 
-  it("deploy project Token and give allowance to IDO contract to spend it", async () => {
-    const initialSupply = 1_000_000_000;
-    const RT = await ethers.getContractFactory("ProjectToken");
-    projectTokenContract = await RT.deploy(
-      "Project Token",
-      "RTK",
-      initialSupply
-    );
-    expect(projectTokenContract.address.length > 0);
-    const ownersTokenBalance = await projectTokenContract.balanceOf(
-      owner.address
-    );
-    expect(ethers.BigNumber.from(ownersTokenBalance).eq(initialSupply));
-  });
-
-  it("deploy IDO contract using DEPLOYER_PK account", async () => {
-    const IDO = await ethers.getContractFactory("VentIDO");
+  it("deploy IDO contract using DEPLOYER_PRIMARY_KEY account", async () => {
+    const IDO = await ethers.getContractFactory("IDO");
     idoContract = await IDO.deploy();
     await idoContract.deployed();
     expect(idoContract.address.length).be.gt(0);
   });
 
-  it("only poolOwner can create a pool", async () => {
+  it("deploy Project Token and give allowance to IDO contract to spend it", async () => {
+    const RT = await ethers.getContractFactory("ProjectToken");
+
+    projectTokenContract = await RT.deploy(
+      "Project Token",
+      "RTK",
+      projectTokenInitialSupply
+    );
+
+    await projectTokenContract.transfer(
+      idoContract.address,
+      countOfProvidedToken
+    );
+
+    const projectTotalSupply = await projectTokenContract.totalSupply();
+    expect(
+      ethers.BigNumber.from(projectTotalSupply).eq(
+        projectTokenInitialSupply.toString()
+      )
+    ).to.be.true;
+
+    const idoContractTokenBalance = await projectTokenBalance(
+      idoContract.address
+    );
+    expect(
+      ethers.BigNumber.from(idoContractTokenBalance).eq(countOfProvidedToken)
+    ).to.be.true;
+
+    const idoTokenBalance = await projectTokenBalance(idoContract.address);
+
+    expect(ethers.BigNumber.from(idoTokenBalance).eq(countOfProvidedToken));
+  });
+
+  it("only poolOwner can create the Pool", async () => {
     try {
       await idoContract
         .connect(poolOwner)
@@ -79,7 +90,7 @@ describe("IDO", async () => {
     }
   });
 
-  it("Grant poolOwner role to POOL_OWNER_PK account", async () => {
+  it("Grant poolOwner role to poolOwner address", async () => {
     const success = await idoContract.callStatic.grantPoolOwnerRole(
       poolOwner.address
     );
@@ -87,7 +98,7 @@ describe("IDO", async () => {
     expect(success);
   });
 
-  it("[1/2] create a pool", async () => {
+  it("[1/2] create the Pool", async () => {
     await idoContract.connect(poolOwner).createPool(
       hardCapWEI,
       softCapWEI,
@@ -95,10 +106,13 @@ describe("IDO", async () => {
       tomorrow, // end time
       PoolStatus.Ongoing
     );
+
+    poolContractAddress = await idoContract.connect(poolOwner).poolAddress();
+    expect(poolContractAddress.length).be.gt(0);
   });
 
-  it("[2/2] add detailed info of the pool", async () => {
-    await idoContract.connect(poolOwner).addPoolDetailedInfo(
+  it("[2/2] add IDO related info to the Pool", async () => {
+    await idoContract.connect(poolOwner).addIDOInfo(
       process.env.RAISED_WEI_RECEIVER_ADDRESS, // project owner
       projectTokenContract.address,
       1, // min allocation per user
@@ -110,9 +124,8 @@ describe("IDO", async () => {
     );
   });
 
-  it("get pool information", async () => {
+  it("get the Pool information", async () => {
     const cpd = await idoContract.getCompletePoolDetails();
-
     expect(ethers.BigNumber.from(cpd.pool.softCap).eq(softCapWEI));
     expect(cpd.poolDetails.projectTokenAddress).be.equal(
       projectTokenContract.address
@@ -122,14 +135,15 @@ describe("IDO", async () => {
     expect(cpd.participationDetails.count.toString()).be.equal("0");
   });
 
-  it("Participants need to be whitelisted to deposit", async () => {
+  it("Deposit should fail if not whitelisted", async () => {
     try {
       await depositor1.sendTransaction({
         to: idoContract.address,
         value: ethers.utils.parseEther("1.0"),
       });
+      expect(false).to.be.true;
     } catch (error) {
-      expect(true);
+      expect(true).to.be.true;
     }
   });
 
@@ -140,21 +154,24 @@ describe("IDO", async () => {
   });
 
   it("Whitelisted participants can deposit", async () => {
-    // Depositor only needs to be whitelisted, then just send ETH to pool contract to participate.
-    const balance = async () => (await depositor1.getBalance()).toString();
-
-    const beforeDeposit = ethers.utils.formatEther(await balance());
+    const beforeDepositPoolBalance = await weiBalance(poolContractAddress);
+    const valueToDeposit = ethers.utils.parseEther("1.0");
 
     await depositor1.sendTransaction({
       to: idoContract.address,
-      value: ethers.utils.parseEther("1.0"),
+      value: valueToDeposit, // ethers.utils.parseEther("1.1"),
     });
 
-    const afterDeposit = ethers.utils.formatEther(await balance());
-    expect(beforeDeposit - afterDeposit > 0);
+    const afterDepositPoolBalance = await weiBalance(poolContractAddress);
+    expect(
+      compareBigNumbers(
+        ethers.BigNumber.from(beforeDepositPoolBalance + valueToDeposit),
+        afterDepositPoolBalance
+      )
+    ).to.be.true;
   });
 
-  it("pool only accepts deposit if it's status in Ongoing", async () => {
+  it("the Pool only accepts deposit if it's status is Ongoing", async () => {
     await idoContract.connect(poolOwner).updatePoolStatus(PoolStatus.Upcoming);
 
     try {
@@ -187,4 +204,56 @@ describe("IDO", async () => {
       ethers.BigNumber.from(totalRaised).eq(ethers.utils.parseEther("1.0"))
     );
   });
+
+  it("withdraw is possible if the Pool is Finished", async () => {
+    // Change pool status to finish
+    await idoContract.connect(poolOwner).updatePoolStatus(PoolStatus.Finished);
+
+    const depositorTokenSupplyBefore = await projectTokenBalance(
+      depositor1.address
+    );
+    const idoTokenSupplyBefore = await projectTokenBalance(idoContract.address);
+
+    // REFUND
+    await idoContract.connect(depositor1).refund();
+
+    expect(
+      compareBigNumbers(
+        idoTokenSupplyBefore,
+        await projectTokenBalance(idoContract.address)
+      )
+    ).to.be.false;
+
+    expect(
+      depositorTokenSupplyBefore <
+        (await projectTokenBalance(depositor1.address))
+    ).to.be.true;
+  });
+
+  it("Participants can withdraw only once", async () => {
+    try {
+      await idoContract.connect(depositor1).refund();
+      expect(false).to.be.true;
+    } catch (error) {
+      expect(true).to.be.true;
+    }
+  });
 });
+
+async function projectTokenBalance(_address: string): Promise<any> {
+  const balance = await projectTokenContract.balanceOf(_address);
+  return balance;
+}
+
+async function weiBalance(_address: string): Promise<any> {
+  const weiBalance = await ethers.provider.getBalance(_address);
+  return weiBalance;
+}
+
+function compareBigNumbers(a: any, b: any): Promise<any> {
+  return ethers.BigNumber.from(a).eq(b);
+}
+
+async function _tokenAllowanceLeft(owner: any, spender: any): Promise<any> {
+  return await projectTokenContract.allowance(owner, spender);
+}
