@@ -117,6 +117,7 @@ contract IDO is Pausable, AccessControl, Ownable, Whitelist {
   function getCompletePoolDetails()
     external
     view
+    _poolIsCreated
     returns (IPool.CompletePoolDetails memory poolDetails)
   {
     poolDetails = pool.getCompletePoolDetails();
@@ -169,6 +170,11 @@ contract IDO is Pausable, AccessControl, Ownable, Whitelist {
 
   modifier _createPoolOnlyOnce() {
     require(address(pool) == address(0), "Pool already created!");
+    _;
+  }
+
+  modifier _poolIsCreated() {
+    require(address(pool) != address(0), "Pool not created yet!");
     _;
   }
 
