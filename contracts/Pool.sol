@@ -84,7 +84,8 @@ contract Pool is IPool, Ownable {
     returns (uint256 _tokensAmount)
   {
     uint256 amountParticipated = collaborations[_participant];
-    _tokensAmount = amountParticipated / _getTotalRaised(); //TODO do the calculation here
+    uint256 totalRaised = _getTotalRaised();
+    _tokensAmount = 1; //TODO do the calculation here
   }
 
   function updatePoolStatus(uint256 _newStatus) external override onlyOwner {
