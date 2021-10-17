@@ -32,7 +32,20 @@ contract Pool is IPool, Ownable {
     emit LogPoolContractAddress(address(this));
   }
 
-  function addIDOInfo(IDOInfo memory _pdi) external override onlyOwner {
+  modifier _addIDOInfoOnlyOnce() {
+    require(
+      address(idoInfo.walletAddress) == address(0),
+      "already added IDO info"
+    );
+    _;
+  }
+
+  function addIDOInfo(IDOInfo memory _pdi)
+    external
+    override
+    onlyOwner
+    _addIDOInfoOnlyOnce
+  {
     _preIDOInfoUpdate(_pdi);
 
     idoInfo.walletAddress = _pdi.walletAddress;

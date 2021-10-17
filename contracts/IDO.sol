@@ -52,7 +52,13 @@ contract IDO is Pausable, AccessControl, Ownable, Whitelist {
     uint256 _startDateTime,
     uint256 _endDateTime,
     uint256 _status
-  ) external payable onlyRole(POOL_OWNER_ROLE) returns (bool success) {
+  )
+    external
+    payable
+    onlyRole(POOL_OWNER_ROLE)
+    _createPoolOnlyOnce
+    returns (bool success)
+  {
     IPool.PoolModel memory model = IPool.PoolModel({
       hardCap: _hardCap,
       softCap: _softCap,
@@ -158,6 +164,11 @@ contract IDO is Pausable, AccessControl, Ownable, Whitelist {
 
   modifier _refundOnlyOnce(address _participant) {
     require(!_didRefund[_participant], "Already claimed!");
+    _;
+  }
+
+  modifier _createPoolOnlyOnce() {
+    require(address(pool) == address(0), "Pool already created!");
     _;
   }
 
