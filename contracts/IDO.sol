@@ -141,8 +141,8 @@ contract IDO is Pausable, AccessControl, Ownable, Whitelist {
 
     _beforeTransferChecks();
 
-    bool successTokenTransfer = projectToken.transfer(_receiver, _amount);
-    require(successTokenTransfer, "Token transfer failed!");
+    bool success = projectToken.transfer(_receiver, _amount);
+    require(success, "Token transfer failed!");
 
     _afterTransferAsserts();
 
