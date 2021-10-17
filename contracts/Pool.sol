@@ -2,10 +2,8 @@
 pragma solidity 0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-
 import "./IPool.sol";
 import "./Validations.sol";
-import "hardhat/console.sol";
 
 contract Pool is IPool, Ownable {
   PoolModel private poolInformation;
@@ -85,8 +83,8 @@ contract Pool is IPool, Ownable {
     _isPoolFinished(poolInformation)
     returns (uint256 _tokensAmount)
   {
-    uint256 totalDeposited = collaborations[_participant];
-    _tokensAmount = totalDeposited / _getTotalRaised(); //TODO Issue 1 ETH = 1 Project Token
+    uint256 amountParticipated = collaborations[_participant];
+    _tokensAmount = amountParticipated / _getTotalRaised(); //TODO do the calculation here
   }
 
   function updatePoolStatus(uint256 _newStatus) external override onlyOwner {
@@ -193,14 +191,11 @@ contract Pool is IPool, Ownable {
   }
 
   modifier _pooIsOngoing(IPool.PoolModel storage _pool) {
-    require(
-      _pool.status == IPool.PoolStatus.Ongoing &&
-        // solhint-disable-next-line not-rely-on-time
-        _pool.startDateTime >= block.timestamp &&
-        // solhint-disable-next-line not-rely-on-time
-        _pool.endDateTime >= block.timestamp,
-      "Pool not open!"
-    );
+    require(_pool.status == IPool.PoolStatus.Ongoing, "Pool not open!");
+    // solhint-disable-next-line not-rely-on-time
+    require(_pool.startDateTime >= block.timestamp, "Pool not started yet!");
+    // solhint-disable-next-line not-rely-on-time
+    require(_pool.endDateTime >= block.timestamp, "pool endDate passed!");
 
     _;
   }
