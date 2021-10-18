@@ -29,15 +29,10 @@ const PoolStatus = {
 
 describe("IDO", async () => {
   before(async () => {
-    if (process.env.NETWORK_GATEWAY_API?.length == 0) {
-      console.error("ERROR: set environment variables first");
-      process.exit(-1);
-    }
-
     [, poolOwner, depositor1, depositor2, nonWhitelistedDepositor3] =
       await ethers.getSigners();
-    now = new Date();
-    tomorrow = now.getTime() + 10000; // new Date(new Date().setDate(now.getDate() + 1));
+    now = Math.floor(Date.now() / 1000) + 60;
+    tomorrow = now + 24 * 60 * 60;
 
     await deployIDO();
 
@@ -57,7 +52,7 @@ describe("IDO", async () => {
           .createPool(
             hardCapWEI,
             softCapWEI,
-            now.getTime(),
+            now,
             tomorrow,
             PoolStatus.Upcoming
           );
@@ -140,6 +135,7 @@ describe("IDO", async () => {
       expect(success).to.be.false;
 
       await updatePoolStatus(PoolStatus.Ongoing);
+      await ethers.provider.send("evm_setNextBlockTimestamp", [now]);
 
       const poolBalanceBefore = await weiBalance(poolContractAddress);
       const valueToDepositInETH = "1.0";
@@ -266,7 +262,7 @@ async function createThePool(): Promise<void> {
   await idoContract.connect(poolOwner).createPool(
     hardCapWEI,
     softCapWEI,
-    now.getTime(), // start time
+    now, // start time
     tomorrow, // end time
     PoolStatus.Upcoming
   );
@@ -274,7 +270,7 @@ async function createThePool(): Promise<void> {
 
 async function addIDOInfo(): Promise<void> {
   await idoContract.connect(poolOwner).addIDOInfo(
-    process.env.RAISED_WEI_RECEIVER_ADDRESS, // project owner
+    poolOwner.address, // project owner
     projectTokenContract.address,
     1, // min allocation per user
     10, // max allocation per user

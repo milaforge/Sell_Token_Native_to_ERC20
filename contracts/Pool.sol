@@ -194,7 +194,7 @@ contract Pool is IPool, Ownable {
   modifier _pooIsOngoing(IPool.PoolModel storage _pool) {
     require(_pool.status == IPool.PoolStatus.Ongoing, "Pool not open!");
     // solhint-disable-next-line not-rely-on-time
-    require(_pool.startDateTime >= block.timestamp, "Pool not started yet!");
+    require(_pool.startDateTime <= block.timestamp, "Pool not started yet!");
     // solhint-disable-next-line not-rely-on-time
     require(_pool.endDateTime >= block.timestamp, "pool endDate passed!");
 
