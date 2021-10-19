@@ -69,9 +69,16 @@ contract Pool is IPool, Ownable {
     _hardCapNotPassed(poolInformation.hardCap)
   {
     uint256 _amount = msg.value;
+    uint256 previousAllocation = _tokenAllocation(collaborations[_sender]);
+    uint256 newAllocation = _tokenAllocation(collaborations[_sender] + _amount);
+    require(newAllocation >= idoInfo.minAllocationPerUser, "below min allocation");
+    require(newAllocation <= idoInfo.maxAllocationPerUser, "max allocation reached");
+    require(newAllocation > previousAllocation, "allocation too small");
+    require(idoInfo.totalTokenSold + (newAllocation - previousAllocation) <= idoInfo.totalTokenProvided, "token supply exceeded");
 
     _increaseRaisedWEI(_amount);
     _addToParticipants(_sender);
+    idoInfo.totalTokenSold += newAllocation - previousAllocation;
     emit LogDeposit(_sender, _amount);
   }
 
@@ -84,13 +91,14 @@ contract Pool is IPool, Ownable {
     returns (uint256 _tokensAmount)
   {
     uint256 amountParticipated = collaborations[_participant];
-    uint256 totalRaised = _getTotalRaised();
-    _tokensAmount = 1; //TODO do the calculation here
+    require(amountParticipated > 0, "no participation found");
+    _tokensAmount = _tokenAllocation(amountParticipated);
   }
 
   function updatePoolStatus(uint256 _newStatus) external override onlyOwner {
     require(_newStatus < 5 && _newStatus >= 0, "wrong Status;");
     uint256 currentStatus = uint256(poolInformation.status);
+    require(_isValidTransition(currentStatus, _newStatus), "invalid status transition");
     poolInformation.status = PoolStatus(_newStatus);
     emit LogPoolStatusChanged(currentStatus, _newStatus);
   }
@@ -160,7 +168,19 @@ contract Pool is IPool, Ownable {
     collaborations[_address] += msg.value;
   }
 
+  function _tokenAllocation(uint256 _weiAmount) private view returns (uint256) {
+    return (_weiAmount * idoInfo.exchangeRate) / (idoInfo.tokenPrice * 1 ether);
+  }
+
+  function _isValidTransition(uint256 _current, uint256 _next) private pure returns (bool) {
+    if (_current == uint256(PoolStatus.Upcoming)) return _next == uint256(PoolStatus.Ongoing) || _next == uint256(PoolStatus.Cancelled);
+    if (_current == uint256(PoolStatus.Ongoing)) return _next == uint256(PoolStatus.Paused) || _next == uint256(PoolStatus.Finished) || _next == uint256(PoolStatus.Cancelled);
+    if (_current == uint256(PoolStatus.Paused)) return _next == uint256(PoolStatus.Ongoing) || _next == uint256(PoolStatus.Cancelled);
+    return false;
+  }
+
   function _preValidatePoolCreation(IPool.PoolModel memory _pool) private view {
+    require(uint256(_pool.status) < 5, "wrong Status;");
     require(_pool.hardCap > 0, "hardCap must be > 0");
     require(_pool.softCap > 0, "softCap must be > 0");
     require(_pool.softCap < _pool.hardCap, "softCap must be < hardCap");
@@ -189,6 +209,8 @@ contract Pool is IPool, Ownable {
 
     require(_idoInfo.exchangeRate > 0, "exchangeRate must be > 0!");
     require(_idoInfo.tokenPrice > 0, "token price must be > 0!");
+    require(_idoInfo.totalTokenProvided > 0, "token supply must be > 0!");
+    require(_idoInfo.totalTokenSold <= _idoInfo.totalTokenProvided, "sold exceeds supply!");
   }
 
   modifier _pooIsOngoing(IPool.PoolModel storage _pool) {

@@ -144,10 +144,25 @@ describe("IDO", async () => {
       expect(await depositETH(depositor1, valueToDepositInETH)).to.be.true;
       expect(await depositETH(depositor2, valueToDepositInETH)).to.be.true;
 
+      // Allocations are cumulative and denominated in project-token units.
+      expect(await depositETH(depositor1, "8.0")).to.be.true;
+      expect(await depositETH(depositor1, "2.0")).to.be.false;
+
+      // A deposit that rounds to zero project tokens must not mutate state.
+      const detailsBeforeDustDeposit = await idoContract.getCompletePoolDetails();
+      expect(
+        await depositor2.sendTransaction({
+          to: idoContract.address,
+          value: 1,
+        }).then(() => true).catch(() => false)
+      ).to.be.false;
+      const detailsAfterDustDeposit = await idoContract.getCompletePoolDetails();
+      expect(detailsAfterDustDeposit.totalRaised.eq(detailsBeforeDustDeposit.totalRaised)).to.be.true;
+
       const afterDepositPoolBalance = await weiBalance(poolContractAddress);
       expect(
         compareBigNumbers(
-          _bigNumber(poolBalanceBefore + value * 2), //Depositor 1 and 2 each deposited 1 ETH
+          _bigNumber(poolBalanceBefore + value * 10), // Depositor 1 deposited 9 ETH; depositor 2 deposited 1 ETH.
           afterDepositPoolBalance
         )
       ).to.be.true;
@@ -171,7 +186,7 @@ describe("IDO", async () => {
       expect(participants.investorsDetails[1].addressOfParticipant).be.equal(
         depositor2.address
       );
-      expect(details.totalRaised.eq(ethers.utils.parseEther("2.0")));
+      expect(details.totalRaised.eq(ethers.utils.parseEther("10.0")));
     });
 
     it("withdraw can only happen if the Pool status is Finished", async () => {
@@ -208,11 +223,21 @@ describe("IDO", async () => {
         depositor2TokenSupplyBefore <
           (await projectTokenBalance(depositor2.address))
       ).to.be.true;
+
+      expect(
+        (await projectTokenBalance(depositor1.address)).sub(
+          depositor1TokenSupplyBefore
+      ).eq(9)
+      ).to.be.true;
     });
 
     it("Participants can withdraw only once", async () => {
       expect(await refund(depositor1)).to.be.false;
       expect(await refund(depositor2)).to.be.false;
+    });
+
+    it("does not allow transitions out of Finished", async () => {
+      expect(await updatePoolStatus(PoolStatus.Ongoing)).to.be.false;
     });
   });
 });
@@ -281,8 +306,13 @@ async function addIDOInfo(): Promise<void> {
   );
 }
 
-async function updatePoolStatus(_newStatus: number): Promise<void> {
-  await idoContract.connect(poolOwner).updatePoolStatus(_newStatus);
+async function updatePoolStatus(_newStatus: number): Promise<boolean> {
+  try {
+    await idoContract.connect(poolOwner).updatePoolStatus(_newStatus);
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
 async function depositETH(

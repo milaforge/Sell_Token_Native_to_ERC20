@@ -59,6 +59,7 @@ contract IDO is Pausable, AccessControl, Ownable, Whitelist {
     _createPoolOnlyOnce
     returns (bool success)
   {
+    require(_status < 5, "wrong Status;");
     IPool.PoolModel memory model = IPool.PoolModel({
       hardCap: _hardCap,
       softCap: _softCap,
@@ -134,8 +135,6 @@ contract IDO is Pausable, AccessControl, Ownable, Whitelist {
     _refundOnlyOnce(msg.sender)
   {
     address _receiver = msg.sender;
-    _didRefund[_receiver] = true;
-
     uint256 _amount = pool.unclaimedTokens(_receiver);
     require(_amount > 0, "no participations found!");
 
@@ -143,6 +142,8 @@ contract IDO is Pausable, AccessControl, Ownable, Whitelist {
 
     bool success = projectToken.transfer(_receiver, _amount);
     require(success, "Token transfer failed!");
+
+    _didRefund[_receiver] = true;
 
     _afterTransferAsserts();
 
