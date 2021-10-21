@@ -1,33 +1,64 @@
-# IDO launchpad
+# Solidity IDO launchpad
 
-## use cases:
+This is a Solidity implementation of a small IDO launchpad: an operator
+creates a token sale, whitelists participants, accepts native-token deposits,
+tracks allocations, and lets participants claim project tokens after the sale
+finishes.
 
-- [UC-D0] IDO Smart contract deployer gets the Admin Role
-- [UC-D0] Admin determines PoolOwner Role
-- [UC-D1] [UC-D2] PoolOwner creates and manages the Pool
-- [UC-D3] PoolOwner add Whitelisted addresses
-- [UC-D4] Whitelisted participants, can participate in the Pool by sending ETH to IDO smart contract
-- [UC-D5]: After the Pool is Finished, Participants can withdraw their share (only once) 
+It is a compact example of building a stateful smart-contract system with role
+permissions, lifecycle validation, accounting invariants, and adversarial
+tests. It is not presented as audited or production-ready code.
 
----
+## What I built
 
-# Setting up to run tests
+- `IDO.sol` — participant-facing coordinator, role administration, whitelist
+  boundary, deposit routing, and one-time token claims.
+- `Pool.sol` — per-sale configuration, lifecycle state machine, participant
+  accounting, hard-cap enforcement, allocation calculation, and token claim
+  amounts.
+- `Whitelist.sol` — managed participant allowlist.
+- `ProjectToken.sol` — sample ERC-20 used by the local test suite.
+- `IPool.sol` and `Validations.sol` — explicit interfaces and shared input
+  validation.
 
-* `npm ci`
+The contract boundary is intentionally simple: `IDO` deploys and owns one
+`Pool`; the pool accepts deposits only through its owner (`IDO`); participants
+interact with `IDO`; and project tokens are held by `IDO` until claims.
 
-* Set variables in `.env` file
+## Security and correctness demonstrated
 
-* `npm run test`
+The test suite exercises both normal flows and rejected transitions:
 
----
-## Deploy on Rinkeby:
+- only whitelisted addresses can deposit through the native-token receive path;
+- deposits respect the sale window, hard cap, cumulative per-user limits, and
+  available token supply;
+- rejected deposits revert without changing accounting state;
+- total raised equals the sum of participant records across generated deposits;
+- claims are available only after `Finished`, transfer the expected allocation,
+  and cannot be repeated;
+- only declared pool status transitions are accepted.
 
-* Uncomment and set variables in `.env` file ([Rinkeby] section)
+The deeper design decisions and boundaries are documented here:
 
-### then
+- [Architecture](docs/architecture.md)
+- [Trade-offs](docs/tradeoffs.md)
+- [Threat assumptions](docs/threat-assumptions.md)
 
-`npx hardhat deploy --network rinkeby`
+## Run the tests
 
-## or
+```bash
+npm ci
+npm test
+```
 
-`npx hardhat run scripts/deploy.ts --network rinkeby`
+The project uses Solidity `0.8.0`, Hardhat, ethers, OpenZeppelin Contracts,
+and deterministic stateful/invariant-style tests in
+[`test/ido.invariant.ts`](test/ido.invariant.ts).
+
+## Important limitations
+
+The current implementation has no Ether refund flow, no recovery path for
+incorrect administrative configuration, and assumes a standard ERC-20 token
+with sufficient balance. Administrative keys and sale parameters remain
+trusted inputs. These are deliberate boundaries of this demonstration and are
+described in the [threat assumptions](docs/threat-assumptions.md).
